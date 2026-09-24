@@ -1,6 +1,6 @@
 import {NextRequest,NextResponse} from "next/server";
 import {createClient} from "@supabase/supabase-js";
-import {chooseBookmaker,fetchOdds,fetchScores} from "../../../lib/feed/the-odds-api";
+import {chooseBookmaker,fetchOdds,fetchScores} from "../../../../lib/feed/the-odds-api";
 export const dynamic="force-dynamic";
 
 function eventStatus(score?:{completed:boolean},commence?:string){
