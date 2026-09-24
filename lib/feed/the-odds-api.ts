@@ -14,6 +14,12 @@ async function getJson<T>(url:string):Promise<T>{
   if(!res.ok) throw new Error("Feed request failed: "+res.status+" "+await res.text());
   return res.json() as Promise<T>;
 }
+export async function fetchSports(){
+  const c=feedConfig();
+  const q=new URLSearchParams({apiKey:c.apiKey});
+  return getJson<Array<{key:string;group:string;title:string;description?:string;active:boolean;has_outrights:boolean}>>(BASE+"/sports?"+q.toString());
+}
+
 export async function fetchOdds(sport:string){
   const c=feedConfig();
   const q=new URLSearchParams({apiKey:c.apiKey,regions:c.regions,markets:c.markets,oddsFormat:"decimal",dateFormat:"iso"});
