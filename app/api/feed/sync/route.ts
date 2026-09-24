@@ -1,6 +1,6 @@
 import {NextRequest,NextResponse} from "next/server";
 import {createClient} from "@supabase/supabase-js";
-import {chooseBookmaker,fetchOdds,fetchScores,feedConfig,mapMarketName,FeedOutcome} from "../../../../lib/feed/the-odds-api";
+import {chooseBookmaker,fetchOdds,fetchScores,fetchSports,feedConfig,mapMarketName,FeedOutcome} from "../../../../lib/feed/the-odds-api";
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
 export const maxDuration=60;
@@ -22,16 +22,17 @@ export async function GET(req:NextRequest){try{assertAuthorized(req);return awai
 export async function POST(req:NextRequest){return GET(req);}
 async function sync(){
   const c=feedConfig();
+  const sportKeys=c.sports.includes("auto") ? (await fetchSports()).filter(s=>s.active).map(s=>s.key) : c.sports;
   const url=process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey=process.env.SUPABASE_SERVICE_ROLE_KEY;
   if(!url||!serviceKey) return NextResponse.json({ok:false,error:"Server Supabase credentials are not configured"},{status:500});
   const db=createClient(url,serviceKey,{auth:{autoRefreshToken:false,persistSession:false}});
-  const run=(await db.from("feed_sync_runs").insert({provider:"the_odds_api",status:"running",sports_requested:c.sports.length}).select("id").single()).data;
+  const run=(await db.from("feed_sync_runs").insert({provider:"the_odds_api",status:"running",sports_requested:sportKeys.length}).select("id").single()).data;
   const runId=run?.id;
   let eventsSeen=0,eventsUpserted=0,marketsUpserted=0,selectionsUpserted=0;
   const errors:string[]=[];
   try{
-    for(const sportKey of c.sports){
+    for(const sportKey of sportKeys){
       try{
         const [odds,scores]=await Promise.all([fetchOdds(sportKey),fetchScores(sportKey)]);
         const scoreMap=new Map(scores.map(s=>[s.id,s]));
@@ -70,7 +71,7 @@ async function sync(){
       }catch(error:any){errors.push(sportKey+": "+(error?.message||"unknown error"));}
     }
     await db.from("feed_sync_runs").update({status:errors.length?"partial":"success",events_seen:eventsSeen,events_upserted:eventsUpserted,markets_upserted:marketsUpserted,selections_upserted:selectionsUpserted,errors,finished_at:new Date().toISOString()}).eq("id",runId);
-    return NextResponse.json({ok:true,provider:"the_odds_api",sports:c.sports,eventsSeen,eventsUpserted,marketsUpserted,selectionsUpserted,errors,runId});
+    return NextResponse.json({ok:true,provider:"the_odds_api",sports:sportKeys,eventsSeen,eventsUpserted,marketsUpserted,selectionsUpserted,errors,runId});
   }catch(error:any){
     await db.from("feed_sync_runs").update({status:"failed",errors:[...errors,error?.message||"unknown error"],finished_at:new Date().toISOString()}).eq("id",runId);
     return NextResponse.json({ok:false,error:error?.message||"Feed sync failed",runId},{status:500});
