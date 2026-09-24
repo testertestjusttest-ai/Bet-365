@@ -1,3 +1,63 @@
 "use client";
-import {useEffect,useState} from "react";
-export default function Bets(){const [items,setItems]=useState<any[]>([]);useEffect(()=>{try{setItems(JSON.parse(localStorage.getItem("betnow365-demo-bets")||"[]"))}catch{}},[]);return <main className="app-shell"><header className="topbar"><a className="brand" href="/">BETNOW<span>365</span></a><a className="login-btn" href="/login">Log in</a></header><div className="sports-page"><h1>My Bets</h1><p>Open, settled and cashed-out bets will appear here after authenticated bet placement is enabled.</p>{items.length===0?<div className="loading-card">No bets yet. Select odds from Sports and log in to continue.</div>:items.map((x,i)=><div className="match-card" key={i}><div className="match-meta"><span>{x.status||"Open"}</span><span>{x.date}</span></div><div className="teams"><b>{x.event}</b><b>{x.odd}</b></div></div>)}</div></main>
+
+import { useEffect, useState } from "react";
+
+type DemoBet = {
+  status?: string;
+  date?: string;
+  event?: string;
+  odd?: number | string;
+};
+
+export default function Bets() {
+  const [items, setItems] = useState<DemoBet[]>([]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("betnow365-demo-bets") || "[]";
+      setItems(JSON.parse(raw));
+    } catch {
+      setItems([]);
+    }
+  }, []);
+
+  return (
+    <main className="app-shell">
+      <header className="topbar">
+        <a className="brand" href="/">
+          BETNOW<span>365</span>
+        </a>
+        <a className="login-btn" href="/login">
+          Log in
+        </a>
+      </header>
+
+      <div className="sports-page">
+        <h1>My Bets</h1>
+        <p>
+          Open, settled and cashed-out bets will appear here after
+          authenticated bet placement is enabled.
+        </p>
+
+        {items.length === 0 ? (
+          <div className="loading-card">
+            No bets yet. Select odds from Sports and log in to continue.
+          </div>
+        ) : (
+          items.map((item, index) => (
+            <div className="match-card" key={index}>
+              <div className="match-meta">
+                <span>{item.status || "Open"}</span>
+                <span>{item.date || ""}</span>
+              </div>
+              <div className="teams">
+                <b>{item.event || "Event"}</b>
+                <b>{item.odd ?? "—"}</b>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </main>
+  );
+}
