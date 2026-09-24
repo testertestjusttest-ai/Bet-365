@@ -1,0 +1,4 @@
+"use client";
+import {UserRound,ShieldCheck,HelpCircle,Settings,ChevronRight} from "lucide-react";
+const items=[["Account","Profile, verification and limits",UserRound],["Cashier","Deposit and withdrawal requests",ShieldCheck],["Responsible Gambling","Limits, cooling-off and support",ShieldCheck],["Help & Support","Betting and account help",HelpCircle],["Settings","Language and preferences",Settings]];
+export default function Menu(){return <main className="sports-page"><span className="eyebrow">BETNOW365</span><h1>Menu</h1><p>Account and sportsbook controls.</p><div className="menu-list">{items.map(([name,desc,Icon]:any)=><a className="menu-row" href={name==="Cashier"?"/cashier":name==="Account"?"/login":"#"} key={name}><Icon size={20}/><span><b>{name}</b><small>{desc}</small></span><ChevronRight size={18}/></a>)}</div></main>}
