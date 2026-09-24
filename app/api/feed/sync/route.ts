@@ -56,6 +56,7 @@ async function sync(){
             const ms=await db.from("markets").upsert(marketRow,{onConflict:"event_id,provider,provider_market_key"}).select("id").single();
             if(ms.error||!ms.data) throw ms.error||new Error("Market upsert returned no row");
             marketsUpserted++;
+            await db.from("selections").update({status:"suspended",last_synced_at:new Date().toISOString()}).eq("market_id",ms.data.id);
             for(const outcome of market.outcomes){
               if(typeof outcome.price!=="number"||outcome.price<=1) continue;
               const pkey=outcomeKey(market.key,outcome);
