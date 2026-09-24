@@ -42,3 +42,13 @@ export function mapMarketName(key:string){
   if(key==="outrights") return "Outrights";
   return key.replaceAll("_"," ");
 }
+export async function fetchEventMarkets(sport:string,eventId:string){
+  const c=feedConfig(); const q=new URLSearchParams({apiKey:c.apiKey,regions:c.regions,dateFormat:"iso"});
+  if(c.bookmaker) q.set("bookmakers",c.bookmaker);
+  return getJson<{id:string;sport_key:string;bookmakers:Array<{key:string;title:string;markets:Array<{key:string}>}>}>(BASE+"/sports/"+encodeURIComponent(sport)+"/events/"+encodeURIComponent(eventId)+"/markets?"+q.toString());
+}
+export async function fetchEventOdds(sport:string,eventId:string,markets:string){
+  const c=feedConfig(); const q=new URLSearchParams({apiKey:c.apiKey,regions:c.regions,markets,oddsFormat:"decimal",dateFormat:"iso"});
+  if(c.bookmaker) q.set("bookmakers",c.bookmaker);
+  return getJson<FeedEvent>(BASE+"/sports/"+encodeURIComponent(sport)+"/events/"+encodeURIComponent(eventId)+"/odds?"+q.toString());
+}
