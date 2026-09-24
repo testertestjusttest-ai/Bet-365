@@ -1,6 +1,6 @@
 "use client";
 import {useEffect,useRef,useState} from "react";
-import {useParams,useSearchParams} from "next/navigation";
+import {useParams} from "next/navigation";
 import {ArrowLeft,Bell,ChevronDown,Clock3,Ticket} from "lucide-react";
 import {createClient} from "../../../lib/supabase-browser";
 import {readBetSlip,writeBetSlip,pickKey,BetPick} from "../../../lib/betslip";
@@ -10,11 +10,11 @@ type Market={id:number;name:string;market_type:string;active?:boolean;selections
 type EventData={id:number;league:string;home_team:string;away_team:string;starts_at:string;status:string;home_score:number;away_score:number;markets:Market[]};
 
 export default function Event(){
- const params=useParams<{id:string}>(); const search=useSearchParams(); const provider=search.get("provider"); const providerSport=search.get("sport")||"";
+ const params=useParams<{id:string}>(); const [provider,setProvider]=useState(""); const [providerSport,setProviderSport]=useState("");
  const [open,setOpen]=useState(0),[event,setEvent]=useState<EventData|null>(null),[loading,setLoading]=useState(true);
  const [single,setSingle]=useState<BetPick[]>([]),[multiple,setMultiple]=useState<BetPick[]>([]),[ready,setReady]=useState(false);
  const timers=useRef<Record<string,ReturnType<typeof setTimeout>>>({}); const held=useRef<Record<string,boolean>>({});
- useEffect(()=>{const s=readBetSlip();setSingle(s.single);setMultiple(s.multiple);setReady(true)},[]);
+ useEffect(()=>{const s=readBetSlip();setSingle(s.single);setMultiple(s.multiple);setReady(true);const q=new URLSearchParams(window.location.search);setProvider(q.get("provider")||"");setProviderSport(q.get("sport")||"")},[]);
  useEffect(()=>{if(ready)writeBetSlip({single,multiple})},[single,multiple,ready]);
  useEffect(()=>{
    let mounted=true;
