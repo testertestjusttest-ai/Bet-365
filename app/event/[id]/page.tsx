@@ -1,23 +1,72 @@
 "use client";
-import {useEffect,useState} from "react";
+import {useEffect,useRef,useState} from "react";
 import {useParams} from "next/navigation";
-import {ArrowLeft,Bell,ChevronDown} from "lucide-react";
+import {ArrowLeft,Bell,ChevronDown,Clock3,Ticket} from "lucide-react";
 import {createClient} from "../../../lib/supabase-browser";
+import {readBetSlip,writeBetSlip,pickKey,BetPick} from "../../../lib/betslip";
 
-type Market={id:number;name:string;market_type:string;selections:{id:number;label:string;odds:number;status:string}[]};
+type Selection={id:number;label:string;odds:number;status:string;point?:number};
+type Market={id:number;name:string;market_type:string;active?:boolean;selections:Selection[]};
+type EventData={id:number;league:string;home_team:string;away_team:string;starts_at:string;status:string;home_score:number;away_score:number;markets:Market[]};
+
 export default function Event(){
  const params=useParams<{id:string}>();
- const [open,setOpen]=useState(0),[event,setEvent]=useState<any>(null),[loading,setLoading]=useState(true);
- useEffect(()=>{(async()=>{try{
-   if(!process.env.NEXT_PUBLIC_SUPABASE_URL||!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)return;
-   const supabase=createClient(); const {data,error}=await supabase.from("events").select("id,league,home_team,away_team,starts_at,status,home_score,away_score,markets(id,name,market_type,selections(id,label,odds,status))").eq("id",Number(params.id)).single();
-   if(error) throw error; setEvent(data);
- }catch(e){console.warn("Event lookup failed",e)}finally{setLoading(false)}})()},[params.id]);
- const fallback=!event;
- const markets:Market[]=event?.markets||[];
- return <main className="event-page"><header className="event-top"><a href="/"><ArrowLeft/></a><div><small>{event?.league||"Football"}</small><b>{event?event.home_team+" vs "+event.away_team:"Event"}</b></div><Bell/></header>
+ const [open,setOpen]=useState(0),[event,setEvent]=useState<EventData|null>(null),[loading,setLoading]=useState(true);
+ const [single,setSingle]=useState<BetPick[]>([]),[multiple,setMultiple]=useState<BetPick[]>([]);
+ const timers=useRef<Record<string,ReturnType<typeof setTimeout>>>({});
+ const held=useRef<Record<string,boolean>>({});
+ useEffect(()=>{const s=readBetSlip();setSingle(s.single);setMultiple(s.multiple);},[]);
+ useEffect(()=>{writeBetSlip({single,multiple})},[single,multiple]);
+ useEffect(()=>{
+   let mounted=true;
+   async function load(){
+     try{
+       if(!process.env.NEXT_PUBLIC_SUPABASE_URL||!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)return;
+       const supabase=createClient();
+       const {data,error}=await supabase.from("events").select("id,league,home_team,away_team,starts_at,status,home_score,away_score,markets(id,name,market_type,active,selections(id,label,odds,status,point))").eq("id",Number(params.id)).single();
+       if(error)throw error;
+       if(mounted)setEvent(data as EventData);
+       const channel=supabase.channel("event-"+params.id)
+         .on("postgres_changes",{event:"*",schema:"public",table:"events",filter:"id=eq."+params.id},()=>load())
+         .on("postgres_changes",{event:"*",schema:"public",table:"markets"},()=>load())
+         .on("postgres_changes",{event:"*",schema:"public",table:"selections"},()=>load())
+         .subscribe();
+       return ()=>{supabase.removeChannel(channel)};
+     }catch(e){console.warn("Event lookup failed",e)}
+     finally{if(mounted)setLoading(false)}
+   }
+   let cleanup:undefined|(()=>void);
+   load().then(x=>{cleanup=x});
+   return()=>{mounted=false;cleanup?.()};
+ },[params.id]);
+
+ const addSingle=(m:Market,s:Selection)=>{
+   const p:BetPick={id:pickKey({eventId:Number(params.id),selectionId:s.id}),eventId:Number(params.id),event:(event?.home_team||"Home")+" vs "+(event?.away_team||"Away"),label:m.name+" • "+s.label,odd:Number(s.odds),sport:event?.league||"Sports",selectionId:s.id,marketType:m.market_type,mode:"single"};
+   setSingle(x=>[p,...x.filter(y=>y.id!==p.id)].slice(0,20));
+ };
+ const toggleMultiple=(m:Market,s:Selection)=>{
+   const p:BetPick={id:pickKey({eventId:Number(params.id),selectionId:s.id}),eventId:Number(params.id),event:(event?.home_team||"Home")+" vs "+(event?.away_team||"Away"),label:m.name+" • "+s.label,odd:Number(s.odds),sport:event?.league||"Sports",selectionId:s.id,marketType:m.market_type,mode:"multiple"};
+   setMultiple(x=>x.some(y=>y.id===p.id)?x.filter(y=>y.id!==p.id):[...x,p].slice(0,12));
+ };
+ const down=(m:Market,s:Selection)=>{
+   const k=String(m.id)+":"+s.id;held.current[k]=false;clearTimeout(timers.current[k]);
+   timers.current[k]=setTimeout(()=>{held.current[k]=true;toggleMultiple(m,s)},520);
+ };
+ const up=(m:Market,s:Selection)=>{
+   const k=String(m.id)+":"+s.id;clearTimeout(timers.current[k]);
+   if(!held.current[k])addSingle(m,s);
+ };
+ const multipleOdds=multiple.reduce((a,x)=>a*Number(x.odd),1);
+ const markets=event?.markets||[];
+ return <main className="event-page">
+  <header className="event-top"><a href="/"><ArrowLeft/></a><div><small>{event?.league||"Sports"}</small><b>{event?event.home_team+" vs "+event.away_team:"Event"}</b></div><Bell/></header>
   <div className="event-tabs"><button className="active">Popular</button><button>Bet Builder</button><button>Player Props</button></div>
-  <section className="event-score"><small>{loading?"Loading…":event?new Date(event.starts_at).toLocaleString():"Event data unavailable"}</small><h1>{event?.home_team||"Manchester City"} <span>vs</span> {event?.away_team||"Real Madrid"}</h1><p>{event?.status==="live"?"Live":"Pre-match"} • {markets.length||4}+ markets</p></section>
-  <div className="market-list">{(markets.length?markets:[{id:0,name:"Match Result",market_type:"1X2",selections:[{id:0,label:"1",odds:1.72,status:"open"},{id:0,label:"X",odds:3.9,status:"open"},{id:0,label:"2",odds:4.8,status:"open"}]}]).map((m:Market,i:number)=><section className="market-card" key={m.id+"-"+m.name}><button className="market-title" onClick={()=>setOpen(open===i?-1:i)}><b>{m.name}</b><ChevronDown className={open===i?"rotate":""}/></button>{open===i&&<div className="market-options">{m.selections.map(s=><button key={s.id+"-"+s.label} disabled={s.status!=="open"}><span>{s.label}</span><strong>{Number(s.odds).toFixed(2)}</strong></button>)}</div>}</section>)}</div>
+  <section className="event-score"><small>{loading?"Loading…":event?new Date(event.starts_at).toLocaleString():"Event data unavailable"}</small><h1>{event?.home_team||"Event"} <span>{event?.status==="live"?event.home_score+" - "+event.away_score:"vs"}</span> {event?.away_team||""}</h1><p>{event?.status==="live"?"LIVE • In play":"Pre-match"} • {markets.length||0} markets</p></section>
+  <div className="hold-tip"><Clock3 size={14}/> Tap = Single • Press & hold = Multiple</div>
+  <div className="market-list">{markets.map((m,i)=><section className="market-card" key={m.id}>
+    <button className="market-title" onClick={()=>setOpen(open===i?-1:i)}><b>{m.name}</b><ChevronDown className={open===i?"rotate":""}/></button>
+    {open===i&&<div className="market-options">{m.selections.map(s=><button key={s.id} className={"event-odd "+(multiple.some(x=>x.selectionId===s.id)?"selected":"")} disabled={s.status!=="open"||m.active===false} onPointerDown={()=>down(m,s)} onPointerUp={()=>up(m,s)} onPointerCancel={()=>clearTimeout(timers.current[String(m.id)+":"+s.id])} onContextMenu={e=>e.preventDefault()}><span>{s.status==="open"?s.label:"Suspended"}</span><strong>{s.status==="open"?Number(s.odds).toFixed(2):"—"}</strong></button>)}</div>}
+  </section>)}</div>
+  <aside className="betslip event-slip"><div className="slip-head"><div><b>Bet Slip</b><small>{single.length+multiple.length} selections</small></div><Ticket size={20}/></div>{multiple.length>0&&<div className="builder-box"><b>Multiple selected</b><span>{multiple.length} legs • combined odds <strong>{multipleOdds.toFixed(2)}</strong></span><small>Selections are held across pages.</small></div>}{single.length===0&&multiple.length===0?<div className="empty-slip"><Ticket size={30}/><b>Bet slip is empty</b><span>Tap an odd or press and hold for Multiple.</span></div>:[...single,...multiple].map(p=><div className="slip-item" key={p.id}><button onClick={()=>{setSingle(x=>x.filter(y=>y.id!==p.id));setMultiple(x=>x.filter(y=>y.id!==p.id))}}>×</button><small>{p.event}</small><div><b>{p.label}</b><strong>{Number(p.odd).toFixed(2)}</strong></div></div>)}<a className="place-btn" href="/login">Log in to place bet</a></aside>
  </main>;
 }
