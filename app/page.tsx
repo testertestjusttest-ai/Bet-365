@@ -13,12 +13,12 @@ const fallback:Match[]=[
 ];
 
 export default function HomePage(){
- const [sport,setSport]=useState("Football"),[query,setQuery]=useState(""),[matches,setMatches]=useState<Match[]>(fallback),[loading,setLoading]=useState(true);
+ const [sport,setSport]=useState("Football"),[query,setQuery]=useState(""),[matches,setMatches]=useState<Match[]>(fallback),[loading,setLoading]=useState(true),[live,setLive]=useState<any[]>([]);
  const [single,setSingle]=useState<BetPick[]>([]),[multiple,setMultiple]=useState<BetPick[]>([]),[ready,setReady]=useState(false),[lang,setLang]=useState("English"),[showLang,setShowLang]=useState(false);
  const timers=useRef<Record<string,ReturnType<typeof setTimeout>>>({});
  const longPressed=useRef<Record<string,boolean>>({});
  useEffect(()=>{setLang(localStorage.getItem("betnow365-language")||"English");const saved=readBetSlip();setSingle(saved.single);setMultiple(saved.multiple);setReady(true)},[]);
- useEffect(()=>{loadEvents(sport)},[sport]);
+ useEffect(()=>{loadEvents(sport)},[sport]);\n useEffect(()=>{let on=true;async function loadLive(){try{const r=await fetch("/api/events?status=live&page=0&pageSize=12");const j=await r.json();if(on)setLive(j.events||[])}catch{if(on)setLive([])}}loadLive();const t=setInterval(loadLive,30000);return()=>{on=false;clearInterval(t)}},[]);
  useEffect(()=>{if(ready)writeBetSlip({single,multiple})},[single,multiple,ready]);
  useEffect(()=>{const sync=()=>{const saved=readBetSlip();setSingle(saved.single);setMultiple(saved.multiple)};window.addEventListener("betnow365-betslip",sync);return()=>window.removeEventListener("betnow365-betslip",sync)},[]);
  async function loadEvents(selected:string){
@@ -51,6 +51,7 @@ export default function HomePage(){
   <div className="search-wrap"><Search size={19}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search sports, teams and events"/></div>
   <nav className="sports-strip">{sports.map(x=><button className={sport===x?"sport active":"sport"} key={x} onClick={()=>setSport(x)}>{x}</button>)}</nav>
   <section className="hero"><div><span className="eyebrow">BETNOW365 SPORTS</span><h1>More markets. More ways to play.</h1><p>Tap an odd for a single. Press and hold an odd to add it to your multiple.</p><button className="cta" onClick={()=>document.getElementById("events")?.scrollIntoView({behavior:"smooth"})}>Explore events <ChevronRight size={18}/></button></div><div className="hero-mark">365</div></section>
+  {live.length>0&&<section className="home-live"><div className="section-head"><div><span className="eyebrow">LIVE ({live.length})</span><h2>In Play</h2></div><a className="text-btn" href="/live">More live <ChevronRight size={16}/></a></div><div className="live-strip">{live.map((e:any)=><a className="live-card" href={"/event/"+e.id} key={e.id}><div className="match-meta"><span>🔴 LIVE</span><span>{e.league||e.sport}</span></div><div className="teams"><b>{e.home_team}</b><b>{e.away_team}</b></div><div className="live-score"><strong>{e.home_score}</strong><strong>{e.away_score}</strong></div><div className="market-row"><span>Open event</span><span>{e.markets?.length||0} markets</span></div></a>)}</div></section>}
   <section className="quick-grid">{[["⚽","Football","Fixtures"],["🔴","Live","In-play"],["🏀","Basketball","NBA • Euroleague"],["🎾","Tennis","ATP • WTA"]].map(([i,n,c])=><button key={n} className="quick-card" onClick={()=>n==="Live"?location.href="/live":setSport(n)}><span className="quick-icon">{i}</span><b>{n}</b><small>{c}</small></button>)}</section>
   <div className="content-layout" id="events"><section className="events"><div className="section-head"><div><span className="eyebrow">TOP EVENTS</span><h2>{sport}</h2></div><a className="text-btn" href="/sports">All sports <ChevronRight size={16}/></a></div>
    <div className="league-tabs"><button className="tab active">Popular</button><button className="tab">Today</button><button className="tab">Tomorrow</button><button className="tab">Boosted</button></div>
