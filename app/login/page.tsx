@@ -14,9 +14,9 @@ export default function Login(){
       const supabase=createClient();
       const {error}=await supabase.auth.signInWithPassword({email,password});
       if(error) throw error;
-      window.location.href="/";
+      window.location.href="/account";
     }catch(err){
-      setError(err instanceof Error ? err.message : "Unable to log in.");
+      setError(err instanceof Error ? err.message : "Unable to log in. If your email needs confirmation, confirm it first and try again.");
     }finally{setLoading(false);}
   }
 
