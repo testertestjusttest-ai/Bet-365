@@ -1,10 +1,12 @@
 "use client";
 import {useEffect,useState} from "react";
+import {useParams} from "next/navigation";
 import {ArrowLeft,Bell,ChevronDown} from "lucide-react";
 import {createClient} from "../../../lib/supabase-browser";
 
 type Market={id:number;name:string;market_type:string;selections:{id:number;label:string;odds:number;status:string}[]};
-export default function Event({params}:{params:{id:string}}){
+export default function Event(){
+ const params=useParams<{id:string}>();
  const [open,setOpen]=useState(0),[event,setEvent]=useState<any>(null),[loading,setLoading]=useState(true);
  useEffect(()=>{(async()=>{try{
    if(!process.env.NEXT_PUBLIC_SUPABASE_URL||!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)return;
