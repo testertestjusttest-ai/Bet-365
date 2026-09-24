@@ -2,9 +2,10 @@
 import {useEffect,useMemo,useRef,useState} from "react";
 import {ChevronRight,Globe,Home,Search,Ticket,UserRound,Radio,Trophy,Clock3} from "lucide-react";
 import {createClient} from "../lib/supabase-browser";
+import {readBetSlip,writeBetSlip,pickKey,BetPick} from "../lib/betslip";
 
 type Match={id:number;sport:string;league:string;time:string;home:string;away:string;odds:{label:string;odd:string}[]};
-type Pick={id:number;eventId:number;event:string;label:string;odd:string;sport:string};
+
 const sports=["Football","Basketball","Tennis","NFL","WNBA","Euroleague","Baseball","Ice Hockey","Cricket","Rugby","Boxing","MMA","Golf","Darts"];
 const fallback:Match[]=[
 {id:1,sport:"Football",league:"UEFA Champions League",time:"Today • 20:00",home:"Manchester City",away:"Real Madrid",odds:[{label:"1",odd:"1.72"},{label:"X",odd:"3.90"},{label:"2",odd:"4.80"}]},
@@ -13,10 +14,12 @@ const fallback:Match[]=[
 
 export default function HomePage(){
  const [sport,setSport]=useState("Football"),[query,setQuery]=useState(""),[matches,setMatches]=useState<Match[]>(fallback),[loading,setLoading]=useState(true);
- const [single,setSingle]=useState<Pick[]>([]),[multiple,setMultiple]=useState<Pick[]>([]),[lang,setLang]=useState("English"),[showLang,setShowLang]=useState(false);
+ const [single,setSingle]=useState<BetPick[]>([]),[multiple,setMultiple]=useState<BetPick[]>([]),[lang,setLang]=useState("English"),[showLang,setShowLang]=useState(false);
  const timers=useRef<Record<string,ReturnType<typeof setTimeout>>>({});
  const longPressed=useRef<Record<string,boolean>>({});
- useEffect(()=>{setLang(localStorage.getItem("betnow365-language")||"English");loadEvents(sport)},[sport]);
+ useEffect(()=>{setLang(localStorage.getItem("betnow365-language")||"English");const saved=readBetSlip();setSingle(saved.single);setMultiple(saved.multiple);loadEvents(sport)},[sport]);
+ useEffect(()=>{writeBetSlip({single,multiple})},[single,multiple]);
+ useEffect(()=>{const sync=()=>{const saved=readBetSlip();setSingle(saved.single);setMultiple(saved.multiple)};window.addEventListener("betnow365-betslip",sync);return()=>window.removeEventListener("betnow365-betslip",sync)},[]);
  async function loadEvents(selected:string){
   setLoading(true);
   try{
@@ -34,8 +37,8 @@ export default function HomePage(){
   finally{setLoading(false)}
  }
  const filtered=useMemo(()=>matches.filter(m=>(m.home+" "+m.away+" "+m.league).toLowerCase().includes(query.toLowerCase())),[query,matches]);
- const addSingle=(m:Match,o:{label:string;odd:string})=>setSingle(s=>[{id:Date.now(),eventId:m.id,event:m.home+" vs "+m.away,label:o.label,odd:o.odd,sport:m.sport},...s.filter(x=>!(x.eventId===m.id&&x.label===o.label))].slice(0,20));
- const toggleMultiple=(m:Match,o:{label:string;odd:string})=>setMultiple(s=>s.some(x=>x.eventId===m.id&&x.label===o.label)?s.filter(x=>!(x.eventId===m.id&&x.label===o.label)):[...s,{id:Date.now(),eventId:m.id,event:m.home+" vs "+m.away,label:o.label,odd:o.odd,sport:m.sport}].slice(0,12));
+ const addSingle=(m:Match,o:{label:string;odd:string})=>setSingle(s=>[{id:pickKey({eventId:m.id,label:o.label}),eventId:m.id,event:m.home+" vs "+m.away,label:o.label,odd:Number(o.odd),sport:m.sport,mode:"single"},...s.filter(x=>pickKey(x)!==pickKey({eventId:m.id,label:o.label}))].slice(0,20));
+ const toggleMultiple=(m:Match,o:{label:string;odd:string})=>setMultiple(s=>s.some(x=>pickKey(x)===pickKey({eventId:m.id,label:o.label}))?s.filter(x=>pickKey(x)!==pickKey({eventId:m.id,label:o.label})):[...s,{id:pickKey({eventId:m.id,label:o.label}),eventId:m.id,event:m.home+" vs "+m.away,label:o.label,odd:Number(o.odd),sport:m.sport,mode:"multiple"}].slice(0,12));
  const pressStart=(m:Match,o:{label:string;odd:string})=>{const key=m.id+"-"+o.label;longPressed.current[key]=false;timers.current[key]=setTimeout(()=>{longPressed.current[key]=true;toggleMultiple(m,o)},520)};
  const pressEnd=(m:Match,o:{label:string;odd:string})=>{const key=m.id+"-"+o.label;clearTimeout(timers.current[key]);if(!longPressed.current[key])addSingle(m,o)};
  const multipleOdds=multiple.reduce((a,x)=>a*Number(x.odd),1);
@@ -60,7 +63,7 @@ export default function HomePage(){
   <aside className="betslip"><div className="slip-head"><div><b>Bet Slip</b><small>{single.length+multiple.length} selections</small></div><Ticket size={20}/></div>
    <div className="slip-tabs"><button className={single.length?"active":""}>Singles {single.length?"("+single.length+")":""}</button><button className={multiple.length?"active":""}>Multiple {multiple.length?"("+multiple.length+")":""}</button></div>
    {multiple.length>0&&<div className="builder-box"><b>Multiple selected</b><span>{multiple.length} legs • combined odds <strong>{multipleOdds.toFixed(2)}</strong></span><small>Long-press selections to add/remove legs.</small></div>}
-   {single.length===0&&multiple.length===0?<div className="empty-slip"><Ticket size={34}/><b>Your bet slip is empty</b><span>Tap an odd for a single or hold it for a multiple.</span></div>:<>{[...single,...multiple].map(s=><div className="slip-item" key={s.id}><button onClick={()=>{setSingle(x=>x.filter(y=>y.id!==s.id));setMultiple(x=>x.filter(y=>y.id!==s.id))}}>×</button><small>{s.event}</small><div><b>{s.label}</b><strong>{s.odd}</strong></div></div>)}<div className="stake-row"><span>Multiple potential odds</span><b>{multiple.length?multipleOdds.toFixed(2):"—"}</b></div><a className="place-btn" href="/login">Log in to place bet</a></>}
+   {single.length===0&&multiple.length===0?<div className="empty-slip"><Ticket size={34}/><b>Your bet slip is empty</b><span>Tap an odd for a single or hold it for a multiple.</span></div>:<>{[...single,...multiple].map(s=><div className="slip-item" key={s.id}><button onClick={()=>{setSingle(x=>x.filter(y=>y.id!==s.id));setMultiple(x=>x.filter(y=>y.id!==s.id))}}>×</button><small>{s.event}</small><div><b>{s.label}</b><strong>{Number(s.odd).toFixed(2)}</strong></div></div>)}<div className="stake-row"><span>Multiple potential odds</span><b>{multiple.length?multipleOdds.toFixed(2):"—"}</b></div><a className="place-btn" href="/login">Log in to place bet</a></>}
   </aside></div>
   <nav className="bottom-nav"><a className="selected" href="/"><Home/><span>Home</span></a><a href="/sports"><Trophy/><span>Sports</span></a><a href="/live"><Radio/><span>Live</span></a><a href="/bets"><Ticket/><span>Bets</span></a><a href="/login"><UserRound/><span>Account</span></a></nav>
  </main>;
