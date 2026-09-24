@@ -14,11 +14,12 @@ const fallback:Match[]=[
 
 export default function HomePage(){
  const [sport,setSport]=useState("Football"),[query,setQuery]=useState(""),[matches,setMatches]=useState<Match[]>(fallback),[loading,setLoading]=useState(true);
- const [single,setSingle]=useState<BetPick[]>([]),[multiple,setMultiple]=useState<BetPick[]>([]),[lang,setLang]=useState("English"),[showLang,setShowLang]=useState(false);
+ const [single,setSingle]=useState<BetPick[]>([]),[multiple,setMultiple]=useState<BetPick[]>([]),[ready,setReady]=useState(false),[lang,setLang]=useState("English"),[showLang,setShowLang]=useState(false);
  const timers=useRef<Record<string,ReturnType<typeof setTimeout>>>({});
  const longPressed=useRef<Record<string,boolean>>({});
- useEffect(()=>{setLang(localStorage.getItem("betnow365-language")||"English");const saved=readBetSlip();setSingle(saved.single);setMultiple(saved.multiple);loadEvents(sport)},[sport]);
- useEffect(()=>{writeBetSlip({single,multiple})},[single,multiple]);
+ useEffect(()=>{setLang(localStorage.getItem("betnow365-language")||"English");const saved=readBetSlip();setSingle(saved.single);setMultiple(saved.multiple);setReady(true)},[]);
+ useEffect(()=>{loadEvents(sport)},[sport]);
+ useEffect(()=>{if(ready)writeBetSlip({single,multiple})},[single,multiple,ready]);
  useEffect(()=>{const sync=()=>{const saved=readBetSlip();setSingle(saved.single);setMultiple(saved.multiple)};window.addEventListener("betnow365-betslip",sync);return()=>window.removeEventListener("betnow365-betslip",sync)},[]);
  async function loadEvents(selected:string){
   setLoading(true);
