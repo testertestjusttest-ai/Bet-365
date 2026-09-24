@@ -5,9 +5,11 @@ export const runtime="nodejs";
 export const dynamic="force-dynamic";
 export const maxDuration=60;
 function assertAuthorized(req:NextRequest){
-  const secret=process.env.FEED_SYNC_SECRET;
+  const secret=process.env.FEED_SYNC_SECRET||process.env.CRON_SECRET;
   if(!secret) return;
-  const provided=req.headers.get("x-feed-sync-secret")||new URL(req.url).searchParams.get("secret");
+  const auth=req.headers.get("authorization")||"";
+  const bearer=auth.startsWith("Bearer ")?auth.slice(7):"";
+  const provided=req.headers.get("x-feed-sync-secret")||bearer||new URL(req.url).searchParams.get("secret");
   if(provided!==secret) throw new Error("Unauthorized feed sync request");
 }
 function outcomeKey(marketKey:string,o:FeedOutcome){return (marketKey+":"+o.name+":"+(o.point==null?"":String(o.point))).toLowerCase();}
