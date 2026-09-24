@@ -23,3 +23,7 @@ Provider API -> /api/feed/sync -> events -> markets -> selections -> odds_snapsh
 Vercel Cron invokes the endpoint every minute. If no feed key is configured, the endpoint returns a configuration error and the development fixtures remain available.
 
 Before real-money betting, add provider licensing/terms review, KYC/age and jurisdiction checks, betting limits, server-side quote validation, an immutable wallet ledger, settlement, audit logs and responsible-gambling controls.
+
+## Quote validation
+
+`POST /api/bets/quote` validates that selections are still open and markets are active, then returns a short-lived odds snapshot. It supports Singles, Multiples and a first-pass same-event Bet Builder rule (one selection per market). This is a pricing/validation layer only; it does not debit a wallet or place a real-money bet.
