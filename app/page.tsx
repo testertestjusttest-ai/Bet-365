@@ -4,7 +4,7 @@ import {ChevronRight,Globe,Home,Search,Ticket,UserRound,Radio,Trophy,Clock3} fro
 import {createClient} from "../lib/supabase-browser";
 import {readBetSlip,writeBetSlip,pickKey,BetPick} from "../lib/betslip";
 
-type Match={id:number;sport:string;league:string;time:string;home:string;away:string;status:string;homeScore:number;awayScore:number;odds:{label:string;odd:string}[]};
+type Match={id:any;sport:string;sport_key?:string;league:string;time:string;home:string;away:string;status:string;homeScore:number;awayScore:number;odds:{label:string;odd:string}[]};
 
 const sports=["Football","Basketball","Tennis","NFL","WNBA","Euroleague","Baseball","Ice Hockey","Cricket","Rugby","Boxing","MMA","Golf","Darts"];
 const fallback:Match[]=[
@@ -13,7 +13,7 @@ const fallback:Match[]=[
 ];
 
 export default function HomePage(){
- const [sport,setSport]=useState("Football"),[query,setQuery]=useState(""),[matches,setMatches]=useState<Match[]>(fallback),[loading,setLoading]=useState(true),[live,setLive]=useState<any[]>([]),[liveSource,setLiveSource]=useState("database");
+ const [sport,setSport]=useState("Football"),[query,setQuery]=useState(""),[matches,setMatches]=useState<Match[]>(fallback),[loading,setLoading]=useState(true),[live,setLive]=useState<any[]>([]),[liveSource,setLiveSource]=useState("database"),[eventSource,setEventSource]=useState("database"),[eventTab,setEventTab]=useState("Popular");
  const [single,setSingle]=useState<BetPick[]>([]),[multiple,setMultiple]=useState<BetPick[]>([]),[ready,setReady]=useState(false),[lang,setLang]=useState("English"),[showLang,setShowLang]=useState(false),[userEmail,setUserEmail]=useState<string|null>(null);
  const timers=useRef<Record<string,ReturnType<typeof setTimeout>>>({});
  const longPressed=useRef<Record<string,boolean>>({});
@@ -21,20 +21,29 @@ export default function HomePage(){
  useEffect(()=>{loadEvents(sport)},[sport]);\n useEffect(()=>{let on=true;async function loadLive(){try{const r=await fetch("/api/events?status=live&page=0&pageSize=12");const j=await r.json();if(on){setLive(j.events||[]);setLiveSource(j.source||"database")}}catch{if(on)setLive([])}}loadLive();const t=setInterval(loadLive,30000);return()=>{on=false;clearInterval(t)}},[]);
  useEffect(()=>{if(ready)writeBetSlip({single,multiple})},[single,multiple,ready]);
  useEffect(()=>{const sync=()=>{const saved=readBetSlip();setSingle(saved.single);setMultiple(saved.multiple)};window.addEventListener("betnow365-betslip",sync);return()=>window.removeEventListener("betnow365-betslip",sync)},[]);
- async function loadEvents(selected:string){
+ async function loadEvents(selected:string,tab:string){
   setLoading(true);
   try{
-   if(!process.env.NEXT_PUBLIC_SUPABASE_URL||!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY){setLoading(false);return;}
-   const supabase=createClient();
-   const {data,error}=await supabase.from("events").select("id,sport,league,home_team,away_team,starts_at,status,home_score,away_score,markets(id,market_type,selections(label,odds,status))").eq("sport",selected).order("starts_at",{ascending:true}).limit(50);
-   if(error)throw error;
-   const rows=(data||[]).map((e:any)=>{
-    const market=e.markets?.find((m:any)=>["1X2","winner","moneyline"].includes(m.market_type))||e.markets?.[0];
+   const params=new URLSearchParams({sport:selected,page:"0",pageSize:"48"});
+   if(tab==="Today"){
+    const d=new Date(); const start=new Date(d.getFullYear(),d.getMonth(),d.getDate()); const end=new Date(d.getFullYear(),d.getMonth(),d.getDate()+1);
+    params.set("from",start.toISOString()); params.set("to",end.toISOString());
+   } else if(tab==="Tomorrow"){
+    const d=new Date(); const start=new Date(d.getFullYear(),d.getMonth(),d.getDate()+1); const end=new Date(d.getFullYear(),d.getMonth(),d.getDate()+2);
+    params.set("from",start.toISOString()); params.set("to",end.toISOString());
+   }
+   if(tab==="Boosted") params.set("status","scheduled");
+   const r=await fetch("/api/events?"+params.toString(),{cache:"no-store"});
+   const j=await r.json();
+   if(!r.ok) throw new Error(j.error||"Events unavailable");
+   setEventSource(j.source||"database");
+   const rows=(j.events||[]).map((e:any)=>{
+    const market=e.markets?.find((m:any)=>["1X2","h2h","winner","moneyline"].includes(m.market_type))||e.markets?.[0];
     const odds=(market?.selections||[]).filter((s:any)=>s.status==="open").slice(0,4).map((s:any)=>({label:s.label,odd:Number(s.odds).toFixed(2)}));
-    return {id:e.id,sport:e.sport,league:e.league||selected,time:new Date(e.starts_at).toLocaleString(undefined,{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"}),home:e.home_team,away:e.away_team,status:e.status,homeScore:e.home_score||0,awayScore:e.away_score||0,odds};
+    return {id:e.id,sport:e.sport,sport_key:e.sport_key,league:e.league||selected,time:new Date(e.starts_at).toLocaleString(undefined,{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"}),home:e.home_team,away:e.away_team,status:e.status,homeScore:e.home_score||0,awayScore:e.away_score||0,odds};
    });
    setMatches(rows);
-  }catch(e){console.warn("Event data unavailable",e);setMatches(selected==="Football"?fallback:[])}
+  }catch(e){console.warn("Event data unavailable",e);setEventSource("database");setMatches(selected==="Football"&&tab==="Popular"?fallback:[])}
   finally{setLoading(false)}
  }
  const filtered=useMemo(()=>matches.filter(m=>(m.home+" "+m.away+" "+m.league).toLowerCase().includes(query.toLowerCase())),[query,matches]);
@@ -52,15 +61,15 @@ export default function HomePage(){
   <nav className="sports-strip">{sports.map(x=><button className={sport===x?"sport active":"sport"} key={x} onClick={()=>setSport(x)}>{x}</button>)}</nav>
   <section className="hero"><div><span className="eyebrow">BETNOW365 SPORTS</span><h1>More markets. More ways to play.</h1><p>Tap an odd for a single. Press and hold an odd to add it to your multiple.</p><button className="cta" onClick={()=>document.getElementById("events")?.scrollIntoView({behavior:"smooth"})}>Explore events <ChevronRight size={18}/></button></div><div className="hero-mark">365</div></section>
   {live.length>0&&<section className="home-live"><div className="section-head"><div><span className="eyebrow">LIVE ({live.length})</span><h2>In Play {liveSource==="provider"&&<small className="live-source">Live feed</small>}</h2></div><a className="text-btn" href="/live">More live <ChevronRight size={16}/></a></div><div className="live-strip">{live.map((e:any)=><a className="live-card" href={liveSource==="provider"?"/event/"+e.id+"?provider=the_odds_api&sport="+encodeURIComponent(e.sport_key):"/event/"+e.id} key={e.id}><div className="match-meta"><span>🔴 LIVE</span><span>{e.league||e.sport}</span></div><div className="teams"><b>{e.home_team}</b><b>{e.away_team}</b></div><div className="live-score"><strong>{e.home_score}</strong><strong>{e.away_score}</strong></div><div className="market-row"><span>Open event</span><span>{e.markets?.length||0} markets</span></div></a>)}</div></section>}
-  <section className="quick-grid">{[["⚽","Football","Fixtures"],["🔴","Live","In-play"],["🏀","Basketball","NBA • Euroleague"],["🎾","Tennis","ATP • WTA"]].map(([i,n,c])=><button key={n} className="quick-card" onClick={()=>n==="Live"?location.href="/live":setSport(n)}><span className="quick-icon">{i}</span><b>{n}</b><small>{c}</small></button>)}</section>
+  <section className="quick-grid">{[["⚽","Football","Fixtures"],["🔴","Live","In-play"],["🏀","Basketball","NBA • Euroleague"],["🎾","Tennis","ATP • WTA"]].map(([i,n,c])=><button key={n} className="quick-card" onClick={()=>n==="Live"?location.href="/live":setSport(n==="Football"?"Football":n)}><span className="quick-icon">{i}</span><b>{n}</b><small>{c}</small></button>)}</section>
   <div className="content-layout" id="events"><section className="events"><div className="section-head"><div><span className="eyebrow">TOP EVENTS</span><h2>{sport}</h2></div><a className="text-btn" href="/sports">All sports <ChevronRight size={16}/></a></div>
-   <div className="league-tabs"><button className="tab active">Popular</button><button className="tab">Today</button><button className="tab">Tomorrow</button><button className="tab">Boosted</button></div>
+   <div className="league-tabs">{["Popular","Today","Tomorrow","Boosted"].map(tab=><button key={tab} className={eventTab===tab?"tab active":"tab"} onClick={()=>setEventTab(tab)}>{tab}</button>)}</div>
    <div className="hold-tip"><Clock3 size={14}/> Tap = Single bet • Press & hold = Multiple selection</div>
    {loading&&<div className="loading-card">Loading {sport} events…</div>}
    {!loading&&filtered.length===0&&<div className="loading-card">No {sport} events available yet.</div>}
-   {filtered.map(m=><article className="match-card" key={m.id}><div className="match-meta"><span>{m.status==="live"?"🔴 LIVE":"⚽"} {m.league}</span><span>{m.status==="live"?m.homeScore+" - "+m.awayScore:m.time}</span></div><div className="match-main"><div className="teams"><b>{m.home}</b><b>{m.away}</b></div><a className="match-more" href={"/event/"+m.id}><ChevronRight/></a></div>
+   {filtered.map(m=><article className="match-card" key={m.id}><div className="match-meta"><span>{m.status==="live"?"🔴 LIVE":"⚽"} {m.league}</span><span>{m.status==="live"?m.homeScore+" - "+m.awayScore:m.time}</span></div><div className="match-main"><div className="teams"><b>{m.home}</b><b>{m.away}</b></div><a className="match-more" href={eventSource==="provider"?"/event/"+encodeURIComponent(String(m.id))+"?provider=the_odds_api&sport="+encodeURIComponent(m.sport_key||""): "/event/"+m.id}><ChevronRight/></a></div>
     <div className="odds-row">{m.odds.map(o=>{const selected=multiple.some(x=>x.eventId===m.id&&x.label===o.label);return <button key={o.label} className={"odd"+(selected?" selected":"")} onPointerDown={()=>pressStart(m,o)} onPointerUp={()=>pressEnd(m,o)} onPointerCancel={()=>clearTimeout(timers.current[m.id+"-"+o.label])} onContextMenu={e=>e.preventDefault()}><span>{o.label}</span><strong>{o.odd}</strong></button>})}</div>
-    <div className="market-row"><a href={"/event/"+m.id}>+ more markets</a><span>Bet Builder</span></div></article>)}
+    <div className="market-row"><a href={eventSource==="provider"?"/event/"+encodeURIComponent(String(m.id))+"?provider=the_odds_api&sport="+encodeURIComponent((m as any).sport_key||""):"/event/"+m.id}>+ more markets</a><span>Bet Builder</span></div></article>)}
   </section>
   <aside className="betslip"><div className="slip-head"><div><b>Bet Slip</b><small>{single.length+multiple.length} selections</small></div><Ticket size={20}/></div>
    <div className="slip-tabs"><button className={single.length?"active":""}>Singles {single.length?"("+single.length+")":""}</button><button className={multiple.length?"active":""}>Multiple {multiple.length?"("+multiple.length+")":""}</button></div>
