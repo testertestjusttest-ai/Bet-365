@@ -1,6 +1,6 @@
 "use client";
 import {FormEvent,useState} from "react";
-import {createClient} from "@/lib/supabase-browser";
+import {createClient} from "../../lib/supabase-browser";
 
 export default function Login(){
   const [email,setEmail]=useState("");
