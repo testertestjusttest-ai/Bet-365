@@ -19,25 +19,22 @@ export default function Event(){
  useEffect(()=>{writeBetSlip({single,multiple})},[single,multiple]);
  useEffect(()=>{
    let mounted=true;
+   const supabase=createClient();
    async function load(){
      try{
-       if(!process.env.NEXT_PUBLIC_SUPABASE_URL||!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)return;
-       const supabase=createClient();
        const {data,error}=await supabase.from("events").select("id,league,home_team,away_team,starts_at,status,home_score,away_score,markets(id,name,market_type,active,selections(id,label,odds,status,point))").eq("id",Number(params.id)).single();
        if(error)throw error;
        if(mounted)setEvent(data as EventData);
-       const channel=supabase.channel("event-"+params.id)
-         .on("postgres_changes",{event:"*",schema:"public",table:"events",filter:"id=eq."+params.id},()=>load())
-         .on("postgres_changes",{event:"*",schema:"public",table:"markets"},()=>load())
-         .on("postgres_changes",{event:"*",schema:"public",table:"selections"},()=>load())
-         .subscribe();
-       return ()=>{supabase.removeChannel(channel)};
      }catch(e){console.warn("Event lookup failed",e)}
      finally{if(mounted)setLoading(false)}
    }
-   let cleanup:undefined|(()=>void);
-   load().then(x=>{cleanup=x});
-   return()=>{mounted=false;cleanup?.()};
+   load();
+   const channel=supabase.channel("event-"+params.id)
+     .on("postgres_changes",{event:"*",schema:"public",table:"events",filter:"id=eq."+params.id},load)
+     .on("postgres_changes",{event:"*",schema:"public",table:"markets"},load)
+     .on("postgres_changes",{event:"*",schema:"public",table:"selections"},load)
+     .subscribe();
+   return()=>{mounted=false;supabase.removeChannel(channel)};
  },[params.id]);
 
  const addSingle=(m:Market,s:Selection)=>{
