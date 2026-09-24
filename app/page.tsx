@@ -14,10 +14,10 @@ const fallback:Match[]=[
 
 export default function HomePage(){
  const [sport,setSport]=useState("Football"),[query,setQuery]=useState(""),[matches,setMatches]=useState<Match[]>(fallback),[loading,setLoading]=useState(true),[live,setLive]=useState<any[]>([]),[liveSource,setLiveSource]=useState("database");
- const [single,setSingle]=useState<BetPick[]>([]),[multiple,setMultiple]=useState<BetPick[]>([]),[ready,setReady]=useState(false),[lang,setLang]=useState("English"),[showLang,setShowLang]=useState(false);
+ const [single,setSingle]=useState<BetPick[]>([]),[multiple,setMultiple]=useState<BetPick[]>([]),[ready,setReady]=useState(false),[lang,setLang]=useState("English"),[showLang,setShowLang]=useState(false),[userEmail,setUserEmail]=useState<string|null>(null);
  const timers=useRef<Record<string,ReturnType<typeof setTimeout>>>({});
  const longPressed=useRef<Record<string,boolean>>({});
- useEffect(()=>{setLang(localStorage.getItem("betnow365-language")||"English");const saved=readBetSlip();setSingle(saved.single);setMultiple(saved.multiple);setReady(true)},[]);
+ useEffect(()=>{setLang(localStorage.getItem("betnow365-language")||"English");const saved=readBetSlip();setSingle(saved.single);setMultiple(saved.multiple);setReady(true);const supabase=createClient();supabase.auth.getSession().then(({data})=>setUserEmail(data.session?.user?.email||null));const {data}=supabase.auth.onAuthStateChange((_event,session)=>setUserEmail(session?.user?.email||null));return()=>data.subscription.unsubscribe()},[]);
  useEffect(()=>{loadEvents(sport)},[sport]);\n useEffect(()=>{let on=true;async function loadLive(){try{const r=await fetch("/api/events?status=live&page=0&pageSize=12");const j=await r.json();if(on){setLive(j.events||[]);setLiveSource(j.source||"database")}}catch{if(on)setLive([])}}loadLive();const t=setInterval(loadLive,30000);return()=>{on=false;clearInterval(t)}},[]);
  useEffect(()=>{if(ready)writeBetSlip({single,multiple})},[single,multiple,ready]);
  useEffect(()=>{const sync=()=>{const saved=readBetSlip();setSingle(saved.single);setMultiple(saved.multiple)};window.addEventListener("betnow365-betslip",sync);return()=>window.removeEventListener("betnow365-betslip",sync)},[]);
@@ -45,7 +45,7 @@ export default function HomePage(){
  const multipleOdds=multiple.reduce((a,x)=>a*Number(x.odd),1);
  return <main className="app-shell">
   <header className="topbar"><a className="brand" href="/">BETNOW<span>365</span></a><button className="top-link"><Trophy size={15}/> Rewards</button>
-   <div className="top-actions"><button className="lang-btn" onClick={()=>setShowLang(!showLang)}><Globe size={15}/>{lang}</button><a href="/register" className="outline-btn">Register</a><a href="/cashier" className="outline-btn">Cashier</a><a href="/login" className="login-btn">Log in</a></div>
+   <div className="top-actions"><button className="lang-btn" onClick={()=>setShowLang(!showLang)}><Globe size={15}/>{lang}</button>{userEmail?<><a href="/account" className="outline-btn">Account</a><a href="/cashier" className="outline-btn">Cashier</a><button className="login-btn" onClick={async()=>{await createClient().auth.signOut();setUserEmail(null)}}>Log out</button></>:<><a href="/register" className="outline-btn">Register</a><a href="/cashier" className="outline-btn">Cashier</a><a href="/login" className="login-btn">Log in</a></>}</div>
    {showLang&&<div className="language-menu">{["English","বাংলা","Español","Deutsch","Français"].map(x=><button key={x} onClick={()=>{setLang(x);localStorage.setItem("betnow365-language",x);setShowLang(false)}}>{x}</button>)}</div>}
   </header>
   <div className="search-wrap"><Search size={19}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search sports, teams and events"/></div>
