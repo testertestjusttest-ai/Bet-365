@@ -4,12 +4,12 @@ import {ChevronRight,Globe,Home,Search,Ticket,UserRound,Radio,Trophy,Clock3} fro
 import {createClient} from "../lib/supabase-browser";
 import {readBetSlip,writeBetSlip,pickKey,BetPick} from "../lib/betslip";
 
-type Match={id:number;sport:string;league:string;time:string;home:string;away:string;odds:{label:string;odd:string}[]};
+type Match={id:number;sport:string;league:string;time:string;home:string;away:string;status:string;homeScore:number;awayScore:number;odds:{label:string;odd:string}[]};
 
 const sports=["Football","Basketball","Tennis","NFL","WNBA","Euroleague","Baseball","Ice Hockey","Cricket","Rugby","Boxing","MMA","Golf","Darts"];
 const fallback:Match[]=[
-{id:1,sport:"Football",league:"UEFA Champions League",time:"Today • 20:00",home:"Manchester City",away:"Real Madrid",odds:[{label:"1",odd:"1.72"},{label:"X",odd:"3.90"},{label:"2",odd:"4.80"}]},
-{id:2,sport:"Football",league:"La Liga",time:"Today • 21:00",home:"Barcelona",away:"Atletico Madrid",odds:[{label:"1",odd:"1.84"},{label:"X",odd:"3.70"},{label:"2",odd:"4.20"}]}
+{id:1,sport:"Football",league:"UEFA Champions League",time:"Today • 20:00",home:"Manchester City",away:"Real Madrid",status:"scheduled",homeScore:0,awayScore:0,odds:[{label:"1",odd:"1.72"},{label:"X",odd:"3.90"},{label:"2",odd:"4.80"}]},
+{id:2,sport:"Football",league:"La Liga",time:"Today • 21:00",home:"Barcelona",away:"Atletico Madrid",status:"scheduled",homeScore:0,awayScore:0,odds:[{label:"1",odd:"1.84"},{label:"X",odd:"3.70"},{label:"2",odd:"4.20"}]}
 ];
 
 export default function HomePage(){
@@ -26,12 +26,12 @@ export default function HomePage(){
   try{
    if(!process.env.NEXT_PUBLIC_SUPABASE_URL||!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY){setLoading(false);return;}
    const supabase=createClient();
-   const {data,error}=await supabase.from("events").select("id,sport,league,home_team,away_team,starts_at,markets(id,market_type,selections(label,odds,status))").eq("sport",selected).order("starts_at",{ascending:true}).limit(50);
+   const {data,error}=await supabase.from("events").select("id,sport,league,home_team,away_team,starts_at,status,home_score,away_score,markets(id,market_type,selections(label,odds,status))").eq("sport",selected).order("starts_at",{ascending:true}).limit(50);
    if(error)throw error;
    const rows=(data||[]).map((e:any)=>{
     const market=e.markets?.find((m:any)=>["1X2","winner","moneyline"].includes(m.market_type))||e.markets?.[0];
     const odds=(market?.selections||[]).filter((s:any)=>s.status==="open").slice(0,4).map((s:any)=>({label:s.label,odd:Number(s.odds).toFixed(2)}));
-    return {id:e.id,sport:e.sport,league:e.league||selected,time:new Date(e.starts_at).toLocaleString(undefined,{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"}),home:e.home_team,away:e.away_team,odds};
+    return {id:e.id,sport:e.sport,league:e.league||selected,time:new Date(e.starts_at).toLocaleString(undefined,{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"}),home:e.home_team,away:e.away_team,status:e.status,homeScore:e.home_score||0,awayScore:e.away_score||0,odds};
    });
    setMatches(rows);
   }catch(e){console.warn("Event data unavailable",e);setMatches(selected==="Football"?fallback:[])}
@@ -57,7 +57,7 @@ export default function HomePage(){
    <div className="hold-tip"><Clock3 size={14}/> Tap = Single bet • Press & hold = Multiple selection</div>
    {loading&&<div className="loading-card">Loading {sport} events…</div>}
    {!loading&&filtered.length===0&&<div className="loading-card">No {sport} events available yet.</div>}
-   {filtered.map(m=><article className="match-card" key={m.id}><div className="match-meta"><span>⚽ {m.league}</span><span>{m.time}</span></div><div className="match-main"><div className="teams"><b>{m.home}</b><b>{m.away}</b></div><a className="match-more" href={"/event/"+m.id}><ChevronRight/></a></div>
+   {filtered.map(m=><article className="match-card" key={m.id}><div className="match-meta"><span>{m.status==="live"?"🔴 LIVE":"⚽"} {m.league}</span><span>{m.status==="live"?m.homeScore+" - "+m.awayScore:m.time}</span></div><div className="match-main"><div className="teams"><b>{m.home}</b><b>{m.away}</b></div><a className="match-more" href={"/event/"+m.id}><ChevronRight/></a></div>
     <div className="odds-row">{m.odds.map(o=>{const selected=multiple.some(x=>x.eventId===m.id&&x.label===o.label);return <button key={o.label} className={"odd"+(selected?" selected":"")} onPointerDown={()=>pressStart(m,o)} onPointerUp={()=>pressEnd(m,o)} onPointerCancel={()=>clearTimeout(timers.current[m.id+"-"+o.label])} onContextMenu={e=>e.preventDefault()}><span>{o.label}</span><strong>{o.odd}</strong></button>})}</div>
     <div className="market-row"><a href={"/event/"+m.id}>+ more markets</a><span>Bet Builder</span></div></article>)}
   </section>
