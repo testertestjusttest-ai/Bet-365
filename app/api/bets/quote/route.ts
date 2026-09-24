@@ -16,6 +16,10 @@ export async function POST(req:NextRequest){
     if(!["single","multiple","builder"].includes(body.betType))return fail("Unsupported bet type.");
     if(body.stake!=null&&(!Number.isFinite(body.stake)||body.stake<=0))return fail("Invalid stake.");
 
+    // Fail closed until the production real-money database migration and independent review are complete.
+    if(process.env.REAL_MONEY_ENABLED !== "true")
+      return fail("Real-money betting is not enabled on this environment.",503);
+
     const url=process.env.NEXT_PUBLIC_SUPABASE_URL;
     const key=process.env.SUPABASE_SERVICE_ROLE_KEY;
     if(!url||!key)return fail("Server betting credentials are not configured.",500);
