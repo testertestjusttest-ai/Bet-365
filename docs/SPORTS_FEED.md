@@ -27,3 +27,7 @@ Before real-money betting, add provider licensing/terms review, KYC/age and juri
 ## Quote validation
 
 `POST /api/bets/quote` validates that selections are still open and markets are active, then returns a short-lived odds snapshot. It supports Singles, Multiples and a first-pass same-event Bet Builder rule (one selection per market). This is a pricing/validation layer only; it does not debit a wallet or place a real-money bet.
+
+
+### Sport discovery
+`GET /api/feed/sports` exposes the provider's current active sport catalogue. The sync worker also accepts `SPORTS_FEED_SPORTS=auto` to discover active sports automatically; because odds requests consume provider quota per market/region, production deployments should normally use an explicit allowlist.
