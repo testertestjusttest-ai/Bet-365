@@ -18,7 +18,8 @@ export default function HomePage(){
  const timers=useRef<Record<string,ReturnType<typeof setTimeout>>>({});
  const longPressed=useRef<Record<string,boolean>>({});
  useEffect(()=>{setLang(localStorage.getItem("betnow365-language")||"English");const saved=readBetSlip();setSingle(saved.single);setMultiple(saved.multiple);setReady(true);const supabase=createClient();supabase.auth.getSession().then(({data})=>setUserEmail(data.session?.user?.email||null));const {data}=supabase.auth.onAuthStateChange((_event,session)=>setUserEmail(session?.user?.email||null));return()=>data.subscription.unsubscribe()},[]);
- useEffect(()=>{loadEvents(sport)},[sport]);\n useEffect(()=>{let on=true;async function loadLive(){try{const r=await fetch("/api/events?status=live&page=0&pageSize=12");const j=await r.json();if(on){setLive(j.events||[]);setLiveSource(j.source||"database")}}catch{if(on)setLive([])}}loadLive();const t=setInterval(loadLive,30000);return()=>{on=false;clearInterval(t)}},[]);
+ useEffect(()=>{loadEvents(sport,eventTab)},[sport,eventTab]);
+ useEffect(()=>{let on=true;async function loadLive(){try{const r=await fetch("/api/events?status=live&page=0&pageSize=12");const j=await r.json();if(on){setLive(j.events||[]);setLiveSource(j.source||"database")}}catch{if(on)setLive([])}}loadLive();const t=setInterval(loadLive,30000);return()=>{on=false;clearInterval(t)}},[]);
  useEffect(()=>{if(ready)writeBetSlip({single,multiple})},[single,multiple,ready]);
  useEffect(()=>{const sync=()=>{const saved=readBetSlip();setSingle(saved.single);setMultiple(saved.multiple)};window.addEventListener("betnow365-betslip",sync);return()=>window.removeEventListener("betnow365-betslip",sync)},[]);
  async function loadEvents(selected:string,tab:string){
