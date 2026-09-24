@@ -10,6 +10,7 @@ alter table public.profiles
   add column if not exists betting_limit_daily numeric(18,2),
   add column if not exists betting_limit_weekly numeric(18,2),
   add column if not exists betting_limit_monthly numeric(18,2),
+  add column if not exists max_stake numeric(18,2),
   add column if not exists currency text not null default 'USD',
   add column if not exists compliance_reviewed_at timestamptz;
 
