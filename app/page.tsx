@@ -1,4 +1,56 @@
 "use client";
-import {useState} from "react";
-const matches=[["Manchester City","Arsenal","1.62","4.10","5.80"],["Barcelona","Real Madrid","2.05","3.55","3.10"],["Bayern Munich","Dortmund","1.48","4.80","6.20"]];
-export default function Home(){const [slip,setSlip]=useState<any[]>([]);return <main style={{minHeight:"100vh",background:"#090d0b",color:"#fff",fontFamily:"Arial,sans-serif"}}><header style={{background:"#063d25",padding:"14px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",position:"sticky",top:0,zIndex:5}}><b style={{fontSize:24,color:"#fff"}}>BETNOW<span style={{color:"#b9e600"}}>365</span></b><div><button style={{marginRight:8}}>Register</button><button>Login</button></div></header><div style={{padding:16,maxWidth:1100,margin:"auto"}}><input placeholder="Search sports, teams and events" style={{width:"100%",padding:14,borderRadius:10,border:"1px solid #34443c",background:"#121a16",color:"#fff",marginBottom:14}}/><nav style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:14}}>{["Football","Live","Basketball","Tennis","Casino","NFL","WNBA"].map(x=><button key={x} style={{whiteSpace:"nowrap",padding:"10px 14px",borderRadius:20,background:"#14221b",color:"#fff",border:"1px solid #294334"}}>{x}</button>)}</nav><section style={{background:"linear-gradient(100deg,#123d2b,#0c1712)",padding:24,borderRadius:14,marginBottom:18}}><small>BETNOW365 SPORTS</small><h1>Live the game. Play your way.</h1><button style={{background:"#d9ef00",border:0,padding:"12px 20px",borderRadius:8,fontWeight:700}}>Explore events</button></section><h2>Top Events</h2>{matches.map((m,i)=><article key={i} style={{background:"#121815",border:"1px solid #26342d",borderRadius:12,padding:14,margin:"10px 0"}}><div style={{fontSize:12,color:"#93a39a",marginBottom:8}}>Football • Today</div><div style={{fontWeight:700,marginBottom:12}}>{m[0]} <span style={{color:"#6d7b73"}}>vs</span> {m[1]}</div><div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>{m.slice(2).map((o,j)=><button key={j} onClick={()=>setSlip([...slip,{event:m[0]+" vs "+m[1],odd:o}])} style={{background:"#e1ef00",border:0,borderRadius:7,padding:12,fontWeight:700}}>{["1","X","2"][j]} {o}</button>)}</div></article>)}<aside style={{position:"fixed",right:16,bottom:76,width:300,maxWidth:"calc(100% - 32px)",background:"#151c18",border:"1px solid #31443a",borderRadius:14,padding:14}}><b>Bet Slip ({slip.length})</b>{slip.slice(-3).map((s,i)=><div key={i} style={{padding:"8px 0",fontSize:13}}>{s.event} • {s.odd}</div>)}{slip.length>0&&<button style={{width:"100%",background:"#d9ef00",border:0,padding:10,borderRadius:8,fontWeight:700}}>Place Bet</button>}</aside></div></main>}
+import {useEffect,useMemo,useState} from "react";
+import {Bell,ChevronRight,Globe,Home,Search,Ticket,UserRound,Radio,Trophy,Plus} from "lucide-react";
+
+type Match={id:number;league:string;time:string;home:string;away:string;flag:string;odds:string[]};
+const sports=["Football","Live","Basketball","Tennis","NFL","WNBA","Euroleague","Casino"];
+const matches:Match[]=[
+ {id:1,league:"UEFA Champions League",time:"Today • 20:00",home:"Manchester City",away:"Real Madrid",flag:"🇪🇺",odds:["1.72","3.90","4.80"]},
+ {id:2,league:"La Liga",time:"Today • 21:00",home:"Barcelona",away:"Atlético Madrid",flag:"🇪🇸",odds:["1.84","3.70","4.20"]},
+ {id:3,league:"Bundesliga",time:"Tomorrow • 18:30",home:"Bayern Munich",away:"Dortmund",flag:"🇩🇪",odds:["1.48","5.10","6.40"]},
+ {id:4,league:"Premier League",time:"Tomorrow • 20:00",home:"Arsenal",away:"Liverpool",flag:"🏴",odds:["2.35","3.60","2.75"]}
+];
+const labels=["1","X","2"];
+export default function HomePage(){
+ const [sport,setSport]=useState("Football"); const [query,setQuery]=useState(""); const [slip,setSlip]=useState<{id:number;event:string;label:string;odd:string}[]>([]);
+ const [lang,setLang]=useState("English"); const [showLang,setShowLang]=useState(false);
+ useEffect(()=>{setLang(localStorage.getItem("betnow365-language")||"English")},[]);
+ const filtered=useMemo(()=>matches.filter(m=>(m.home+" "+m.away+" "+m.league).toLowerCase().includes(query.toLowerCase())),[query]);
+ const add=(m:Match,i:number)=>setSlip(s=>[...s,{id:Date.now(),event:m.home+" vs "+m.away,label:labels[i],odd:m.odds[i]}]);
+ return <main className="app-shell">
+  <header className="topbar">
+   <div className="brand">BETNOW<span>365</span></div>
+   <button className="top-link"><Trophy size={15}/> Rewards</button>
+   <div className="top-actions"><button className="lang-btn" onClick={()=>setShowLang(!showLang)}><Globe size={15}/>{lang}</button><a href="/register" className="outline-btn">Register</a><a href="/login" className="login-btn">Log in</a></div>
+   {showLang&&<div className="language-menu">{["English","বাংলা","Español","Deutsch","Français"].map(x=><button key={x} onClick={()=>{setLang(x);localStorage.setItem("betnow365-language",x);setShowLang(false)}}>{x}</button>)}</div>}
+  </header>
+  <div className="search-wrap"><Search size={19}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search sports, teams and events"/></div>
+  <nav className="sports-strip">{sports.map(x=><button className={sport===x?"sport active":"sport"} key={x} onClick={()=>setSport(x)}>{x}</button>)}</nav>
+  <section className="hero">
+   <div><span className="eyebrow">BETNOW365 SPORTS</span><h1>More markets. More ways to play.</h1><p>Explore fixtures, live events and competitive odds in one fast sportsbook experience.</p><button className="cta">Explore events <ChevronRight size={18}/></button></div>
+   <div className="hero-mark">365</div>
+  </section>
+  <section className="quick-grid">{[["⚽","Football","1,240 Events"],["🔴","Live","86 Live Now"],["🏀","Basketball","420 Events"],["🎾","Tennis","310 Events"]].map(([i,n,c])=><button key={n} className="quick-card"><span className="quick-icon">{i}</span><b>{n}</b><small>{c}</small></button>)}</section>
+  <div className="content-layout">
+   <section className="events">
+    <div className="section-head"><div><span className="eyebrow">TOP EVENTS</span><h2>{sport==="Football"?"Football":"Popular "+sport}</h2></div><button className="text-btn">View all <ChevronRight size={16}/></button></div>
+    <div className="league-tabs"><button className="tab active">Popular</button><button className="tab">Today</button><button className="tab">Tomorrow</button><button className="tab">Boosted</button></div>
+    {filtered.map(m=><article className="match-card" key={m.id}>
+      <div className="match-meta"><span>{m.flag} {m.league}</span><span>{m.time}</span></div>
+      <div className="match-main"><div className="teams"><b>{m.home}</b><b>{m.away}</b></div><a className="match-more" href={"/event/"+m.id}><ChevronRight/></a></div>
+      <div className="odds-row">{m.odds.map((o,i)=><button key={i} onClick={()=>add(m,i)} className="odd"><span>{labels[i]}</span><strong>{o}</strong></button>)}</div>
+      <div className="market-row"><span>+ 32 markets</span><span>Bet Builder available</span></div>
+    </article>)}
+   </section>
+   <aside className="betslip">
+    <div className="slip-head"><div><b>Bet Slip</b><small>{slip.length} selection{slip.length!==1?"s":""}</small></div><Ticket size={20}/></div>
+    {slip.length===0?<div className="empty-slip"><Ticket size={34}/><b>Your bet slip is empty</b><span>Select odds to add a selection.</span></div>:<>
+      <div className="slip-tabs"><button className="active">Singles</button><button>Bet Builder</button></div>
+      {slip.map(s=><div className="slip-item" key={s.id}><button onClick={()=>setSlip(slip.filter(x=>x.id!==s.id))}>×</button><small>{s.event}</small><div><b>{s.label}</b><strong>{s.odd}</strong></div></div>)}
+      <div className="stake-row"><span>Stake</span><b>$0.00</b></div><button className="place-btn">Log in to place bet</button>
+    </>}
+   </aside>
+  </div>
+  <nav className="bottom-nav"><a className="selected" href="/"><Home/><span>Home</span></a><a href="/sports"><Trophy/><span>Sports</span></a><a href="/live"><Radio/><span>Live</span></a><a href="/bets"><Ticket/><span>Bets</span></a><a href="/login"><UserRound/><span>Account</span></a></nav>
+ </main>
+}
