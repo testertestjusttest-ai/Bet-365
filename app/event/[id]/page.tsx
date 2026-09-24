@@ -11,7 +11,7 @@ type EventData={id:number;league:string;home_team:string;away_team:string;starts
 
 export default function Event(){
  const params=useParams<{id:string}>(); const [provider,setProvider]=useState(""); const [providerSport,setProviderSport]=useState("");
- const [open,setOpen]=useState(0),[event,setEvent]=useState<EventData|null>(null),[loading,setLoading]=useState(true);
+ const [open,setOpen]=useState(0),[event,setEvent]=useState<EventData|null>(null),[loading,setLoading]=useState(true),[eventTab,setEventTab]=useState("Popular");
  const [single,setSingle]=useState<BetPick[]>([]),[multiple,setMultiple]=useState<BetPick[]>([]),[ready,setReady]=useState(false);
  const timers=useRef<Record<string,ReturnType<typeof setTimeout>>>({}); const held=useRef<Record<string,boolean>>({});
  useEffect(()=>{const s=readBetSlip();setSingle(s.single);setMultiple(s.multiple);setReady(true);const q=new URLSearchParams(window.location.search);setProvider(q.get("provider")||"");setProviderSport(q.get("sport")||"")},[]);
@@ -44,10 +44,10 @@ export default function Event(){
  const toggleMultiple=(m:Market,s:Selection)=>{const eventId=event?.id||Number(params.id);const p:BetPick={id:pickKey({eventId,selectionId:s.id}),eventId,event:(event?.home_team||"Home")+" vs "+(event?.away_team||"Away"),label:m.name+" • "+s.label,odd:Number(s.odds),sport:event?.league||"Sports",selectionId:s.id,marketType:m.market_type,mode:"multiple"};setMultiple(x=>x.some(y=>y.id===p.id)?x.filter(y=>y.id!==p.id):[...x,p].slice(0,12));};
  const down=(m:Market,s:Selection)=>{const k=String(m.id)+":"+s.id;held.current[k]=false;clearTimeout(timers.current[k]);timers.current[k]=setTimeout(()=>{held.current[k]=true;toggleMultiple(m,s)},520)};
  const up=(m:Market,s:Selection)=>{const k=String(m.id)+":"+s.id;clearTimeout(timers.current[k]);if(!held.current[k])addSingle(m,s)};
- const multipleOdds=multiple.reduce((a,x)=>a*Number(x.odd),1),markets=event?.markets||[];
+ const multipleOdds=multiple.reduce((a,x)=>a*Number(x.odd),1),allMarkets=event?.markets||[],markets=eventTab==="Popular"?allMarkets.slice(0,8):eventTab==="Player Props"?allMarkets.filter(m=>/player|scorer|points|assists|rebounds|shots|goalscorer/i.test(m.name+" "+m.market_type)):allMarkets;
  return <main className="event-page">
   <header className="event-top"><a href="/"><ArrowLeft/></a><div><small>{event?.league||"Sports"}</small><b>{event?event.home_team+" vs "+event.away_team:"Event"}</b></div><Bell/></header>
-  <div className="event-tabs"><button className="active">Popular</button><button>Bet Builder</button><button>Player Props</button></div>
+  <div className="event-tabs">{["Popular","Bet Builder","Player Props"].map(t=><button key={t} className={eventTab===t?"active":""} onClick={()=>setEventTab(t)}>{t}</button>)}</div>
   <section className="event-score"><small>{loading?"Loading…":event?new Date(event.starts_at).toLocaleString():"Event data unavailable"}</small><h1>{event?.home_team||"Event"} <span>{event?.status==="live"?event.home_score+" - "+event.away_score:"vs"}</span> {event?.away_team||""}</h1><p>{event?.status==="live"?"LIVE • In play":"Pre-match"} • {markets.length||0} markets</p></section>
   <div className="hold-tip"><Clock3 size={14}/> Tap = Single • Press & hold = Multiple</div>
   <div className="market-list">{markets.map((m,i)=><section className="market-card" key={m.id}><button className="market-title" onClick={()=>setOpen(open===i?-1:i)}><b>{m.name}</b><ChevronDown className={open===i?"rotate":""}/></button>{open===i&&<div className="market-options">{m.selections.map(s=><button key={s.id} className={"event-odd "+(multiple.some(x=>x.selectionId===s.id)?"selected":"")} disabled={s.status!=="open"||m.active===false} onPointerDown={()=>down(m,s)} onPointerUp={()=>up(m,s)} onPointerCancel={()=>clearTimeout(timers.current[String(m.id)+":"+s.id])} onContextMenu={e=>e.preventDefault()}><span>{s.status==="open"?s.label:"Suspended"}</span><strong>{s.status==="open"?Number(s.odds).toFixed(2):"—"}</strong></button>)}</div>}</section>)}</div>
