@@ -12,11 +12,11 @@ type EventData={id:number;league:string;home_team:string;away_team:string;starts
 export default function Event(){
  const params=useParams<{id:string}>();
  const [open,setOpen]=useState(0),[event,setEvent]=useState<EventData|null>(null),[loading,setLoading]=useState(true);
- const [single,setSingle]=useState<BetPick[]>([]),[multiple,setMultiple]=useState<BetPick[]>([]);
+ const [single,setSingle]=useState<BetPick[]>([]),[multiple,setMultiple]=useState<BetPick[]>([]),[ready,setReady]=useState(false);
  const timers=useRef<Record<string,ReturnType<typeof setTimeout>>>({});
  const held=useRef<Record<string,boolean>>({});
- useEffect(()=>{const s=readBetSlip();setSingle(s.single);setMultiple(s.multiple);},[]);
- useEffect(()=>{writeBetSlip({single,multiple})},[single,multiple]);
+ useEffect(()=>{const s=readBetSlip();setSingle(s.single);setMultiple(s.multiple);setReady(true)},[]);
+ useEffect(()=>{if(ready)writeBetSlip({single,multiple})},[single,multiple,ready]);
  useEffect(()=>{
    let mounted=true;
    const supabase=createClient();
