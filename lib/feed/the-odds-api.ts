@@ -6,7 +6,7 @@ const BASE="https://api.the-odds-api.com/v4";
 export function feedConfig(){
   const apiKey=process.env.SPORTS_FEED_API_KEY;
   if(!apiKey) throw new Error("SPORTS_FEED_API_KEY is not configured");
-  const sports=(process.env.SPORTS_FEED_SPORTS||"soccer_epl,basketball_nba,americanfootball_nfl,baseball_mlb,icehockey_nhl,tennis_atp_french_open,tennis_wta_french_open").split(",").map(s=>s.trim()).filter(Boolean);
+  const sports=(process.env.SPORTS_FEED_SPORTS||"auto").split(",").map(s=>s.trim()).filter(Boolean);
   return {apiKey,sports,regions:process.env.SPORTS_FEED_REGION||"eu",markets:process.env.SPORTS_FEED_MARKETS||"h2h,spreads,totals",bookmaker:process.env.SPORTS_FEED_BOOKMAKER||""};
 }
 async function getJson<T>(url:string):Promise<T>{
