@@ -45,7 +45,7 @@ export default function HomePage(){
  const multipleOdds=multiple.reduce((a,x)=>a*Number(x.odd),1);
  return <main className="app-shell">
   <header className="topbar"><a className="brand" href="/">BETNOW<span>365</span></a><button className="top-link"><Trophy size={15}/> Rewards</button>
-   <div className="top-actions"><button className="lang-btn" onClick={()=>setShowLang(!showLang)}><Globe size={15}/>{lang}</button><a href="/register" className="outline-btn">Register</a><a href="/login" className="login-btn">Log in</a></div>
+   <div className="top-actions"><button className="lang-btn" onClick={()=>setShowLang(!showLang)}><Globe size={15}/>{lang}</button><a href="/register" className="outline-btn">Register</a><a href="/cashier" className="outline-btn">Cashier</a><a href="/login" className="login-btn">Log in</a></div>
    {showLang&&<div className="language-menu">{["English","বাংলা","Español","Deutsch","Français"].map(x=><button key={x} onClick={()=>{setLang(x);localStorage.setItem("betnow365-language",x);setShowLang(false)}}>{x}</button>)}</div>}
   </header>
   <div className="search-wrap"><Search size={19}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search sports, teams and events"/></div>
