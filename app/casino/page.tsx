@@ -1,0 +1,4 @@
+"use client";
+import {Gamepad2,ChevronRight} from "lucide-react";
+const games=["Royal Slots","Fruit Blast","Lucky 7","Mega Fruits","Book of Gold","Hot Diamonds","Live Casino"];
+export default function Casino(){return <main className="sports-page"><div className="section-head"><div><span className="eyebrow">BETNOW365</span><h1>Casino</h1><p>Casino lobby shell is ready for licensed game providers.</p></div><Gamepad2 size={30}/></div><div className="event-grid">{games.map(g=><article className="match-card" key={g}><div className="match-meta"><span>🎰 CASINO</span><span>Lobby</span></div><div className="match-main"><div className="teams"><b>{g}</b><small>Provider integration slot</small></div><ChevronRight/></div></article>)}</div></main>}
