@@ -47,6 +47,10 @@ async function sync(){
           eventsUpserted++;
           const bookmaker=chooseBookmaker(event);
           if(!bookmaker) continue;
+          const configuredMarketKeys=c.markets.split(",").map(x=>x.trim()).filter(Boolean);
+          if(configuredMarketKeys.length){
+            await db.from("markets").update({active:false,suspension_reason:"Provider market unavailable",last_synced_at:new Date().toISOString()}).eq("event_id",saved.data.id).eq("provider","the_odds_api").in("provider_market_key",configuredMarketKeys);
+          }
           for(const market of bookmaker.markets){
             const marketRow={event_id:saved.data.id,name:mapMarketName(market.key),market_type:market.key,provider:"the_odds_api",provider_market_key:market.key,active:true,suspension_reason:null,last_synced_at:new Date().toISOString()};
             const ms=await db.from("markets").upsert(marketRow,{onConflict:"event_id,provider,provider_market_key"}).select("id").single();
