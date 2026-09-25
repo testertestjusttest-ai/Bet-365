@@ -69,7 +69,7 @@ export default function Casino(){
    <div className="casino-provider-grid">
     {filtered.map((provider,index)=><a className="casino-provider-card" href={"/casino?provider="+encodeURIComponent(provider.name)} key={provider.name}>
       <div className={"casino-provider-mark provider-mark-"+(index%8)+(provider.logo?" has-logo":"")}>
-        {provider.logo ? <><img src={provider.logo} alt="" loading="lazy" onError={(e)=>{e.currentTarget.remove()}}/><span>{initials(provider.name)}</span></> : <span>{initials(provider.name)}</span>}
+        {provider.logo ? <><img src={provider.logo} alt="" loading="lazy" onError={(e)=>{e.currentTarget.parentElement?.classList.remove("has-logo");e.currentTarget.remove()}}/><span>{initials(provider.name)}</span></> : <span>{initials(provider.name)}</span>}
       </div>
       <div><b>{provider.full}</b><small>{provider.type}</small></div>
       <ChevronRight size={19}/>
