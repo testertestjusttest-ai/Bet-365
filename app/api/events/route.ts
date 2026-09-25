@@ -87,6 +87,13 @@ function sportMatches(requested: string | null, item: any) {
     mma: ["mma"],
     golf: ["golf"],
     darts: ["darts"],
+    futsal: ["futsal"],
+    volleyball: ["volleyball"],
+    handball: ["handball"],
+    "table tennis": ["tabletennis", "table_tennis"],
+    badminton: ["badminton"],
+    "aussie rules": ["aussierules"],
+    esports: ["esports", "e_sports"],
   };
 
   const wanted = aliases[q] || [q];
