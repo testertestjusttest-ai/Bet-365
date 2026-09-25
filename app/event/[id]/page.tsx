@@ -14,7 +14,7 @@ export default function Event(){
  const [open,setOpen]=useState(0),[event,setEvent]=useState<EventData|null>(null),[loading,setLoading]=useState(true),[eventTab,setEventTab]=useState("All Markets");
  const [single,setSingle]=useState<BetPick[]>([]),[multiple,setMultiple]=useState<BetPick[]>([]),[ready,setReady]=useState(false),[userEmail,setUserEmail]=useState<string|null>(null);
  const timers=useRef<Record<string,ReturnType<typeof setTimeout>>>({}); const held=useRef<Record<string,boolean>>({});
- useEffect(()=>{const s=readBetSlip();setSingle(s.single);setMultiple(s.multiple);setReady(true);const q=new URLSearchParams(window.location.search);setProvider(q.get("provider")||"");setProviderSport(q.get("sport")||"")},[]);
+ useEffect(()=>{const s=readBetSlip();setSingle(s.single);setMultiple(s.multiple);setReady(true);const q=new URLSearchParams(window.location.search);setProvider(q.get("provider")||"");setProviderSport(q.get("sport")||"");const supabase=createClient();supabase.auth.getSession().then(({data})=>setUserEmail(data.session?.user?.email||null));const {data}=supabase.auth.onAuthStateChange((_event,session)=>setUserEmail(session?.user?.email||null));return()=>data.subscription.unsubscribe()},[]);
  useEffect(()=>{if(ready)writeBetSlip({single,multiple})},[single,multiple,ready]);
  useEffect(()=>{
    let mounted=true;
