@@ -72,9 +72,9 @@ export async function fetchEventMarkets(sport:string,eventId:string,regionsOverr
   return getJson<{id:string;sport_key:string;bookmakers:Array<{key:string;title:string;markets:Array<{key:string}>}>}>(BASE+"/sports/"+encodeURIComponent(sport)+"/events/"+encodeURIComponent(eventId)+"/markets?"+q.toString());
 }
 
-export async function fetchEventOdds(sport:string,eventId:string,markets:string){
+export async function fetchEventOdds(sport:string,eventId:string,markets:string,regionsOverride?:string){
   const c=feedConfig();
-  const q=new URLSearchParams({apiKey:c.apiKey,regions:c.regions,markets,oddsFormat:"decimal",dateFormat:"iso"});
+  const q=new URLSearchParams({apiKey:c.apiKey,regions:regionsOverride||c.regions,markets,oddsFormat:"decimal",dateFormat:"iso"});
   if(c.bookmaker) q.set("bookmakers",c.bookmaker);
   return getJson<FeedEvent>(BASE+"/sports/"+encodeURIComponent(sport)+"/events/"+encodeURIComponent(eventId)+"/odds?"+q.toString());
 }
