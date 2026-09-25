@@ -6,7 +6,9 @@ export const dynamic = "force-dynamic";
 
 function eventStatus(score: { completed: boolean } | undefined, commence?: string) {
   if (score?.completed) return "finished";
-  if (commence && new Date(commence).getTime() <= Date.now()) return "live";
+  // A start time in the past is not enough to call an event live.
+  // The provider's live scores feed is the authoritative live signal.
+  if (score && commence && new Date(commence).getTime() <= Date.now()) return "live";
   return "scheduled";
 }
 
@@ -133,8 +135,9 @@ async function providerEvents(requestedSport: string | null, status: string | nu
 
       for (const raw of odds) {
         const start = new Date(raw.commence_time).getTime();
-        const item = normalizeProviderEvent(raw, scoreMap.get(raw.id));
-        if (status === "live" && item.status !== "live") continue;
+        const liveScore = scoreMap.get(raw.id);
+        const item = normalizeProviderEvent(raw, liveScore);
+        if (status === "live" && (!liveScore || item.status !== "live")) continue;
         if (status === "scheduled" && item.status !== "scheduled") continue;
         if (status === "finished" && item.status !== "finished") continue;
 
