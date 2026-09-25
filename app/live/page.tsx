@@ -1,11 +1,28 @@
 "use client";
 import {useEffect,useState} from "react";
+import {Home,Radio,RefreshCw,Ticket,Trophy} from "lucide-react";
+import SiteFooter from "../../components/site-footer";
+
 export default function Live(){
- const [events,setEvents]=useState<any[]>([]),[source,setSource]=useState("database");
- useEffect(()=>{let active=true;async function load(){try{const r=await fetch("/api/events?status=live&page=0&pageSize=100");const j=await r.json();if(active){setEvents(j.events||[]);setSource(j.source||"database")}}catch{if(active)setEvents([])}}load();const t=setInterval(load,30000);return()=>{active=false;clearInterval(t)}},[]);
- return <main className="app-shell"><header className="topbar"><a className="brand" href="/">BETNOW<span>365</span></a><a className="login-btn" href="/">Home</a></header><div className="sports-page">
- <div className="section-head"><div><span className="eyebrow">IN PLAY</span><h1>Live</h1></div><span className="text-btn">{events.length} live events</span></div>
- {events.length===0?<div className="loading-card">No live events right now.</div>:<div className="live-strip">{events.map(e=><a className="live-card" href={source==="provider"?"/event/"+encodeURIComponent(String(e.id))+"?provider=the_odds_api&sport="+encodeURIComponent(e.sport_key||""):"/event/"+e.id} key={e.id}><div className="match-meta"><span>🔴 LIVE</span><span>{e.league||e.sport}</span></div><div className="teams"><b>{e.home_team}</b><b>{e.away_team}</b></div><div className="live-score"><strong>{e.home_score}</strong><strong>{e.away_score}</strong></div><div className="market-row"><span>Open event</span><span>{e.markets?.length||0} markets</span></div></a>)}</div>}
- <p style={{color:"#899891",fontSize:12}}>Live data refreshes automatically. Suspended markets remain unavailable until the provider reopens them.</p>
- </div></main>
+ const [events,setEvents]=useState<any[]>([]),[source,setSource]=useState("database"),[loading,setLoading]=useState(true),[lastUpdated,setLastUpdated]=useState("");
+ async function load(){
+   setLoading(true);
+   try{
+     const r=await fetch("/api/events?status=live&page=0&pageSize=100",{cache:"no-store"});
+     const j=await r.json();
+     setEvents(j.events||[]);setSource(j.source||"database");setLastUpdated(new Date().toLocaleTimeString());
+   }catch{setEvents([])}
+   finally{setLoading(false)}
+ }
+ useEffect(()=>{load();const t=setInterval(load,30000);return()=>clearInterval(t)},[]);
+ return <main className="app-shell"><header className="topbar"><a className="brand" href="/">BETNOW<span>365</span></a><div className="top-actions"><a className="join-btn" href="/">Home</a></div></header>
+ <div className="sports-page">
+  <div className="section-head"><div><span className="eyebrow">IN PLAY</span><h1>Live matches</h1></div><button className="view-all" onClick={load}><RefreshCw size={14}/> Refresh</button></div>
+  <div className="live-status-bar"><span><i/> {loading?"Updating live feed…":events.length+" live events"}</span><small>{lastUpdated?"Updated "+lastUpdated:""}</small></div>
+  {loading&&events.length===0?<div className="loading-card">Loading live matches…</div>:events.length===0?<div className="live-empty"><Radio size={25}/><b>No live matches right now</b><small>The live feed is checked automatically every 30 seconds. When the provider reports an in-play event, it will appear here without a page reload.</small><button onClick={load}><RefreshCw size={14}/> Check again</button></div>:<div className="live-list">{events.map(e=><a className="live-full-card" href={"/event/"+encodeURIComponent(String(e.id))+"?provider=the_odds_api&sport="+encodeURIComponent(e.sport_key||"")} key={e.id}><div className="live-full-head"><span className="live-dot">● LIVE</span><b>{e.league||e.sport}</b><span>{new Date(e.starts_at).toLocaleTimeString(undefined,{hour:"2-digit",minute:"2-digit"})}</span></div><div className="live-full-body"><div><b>{e.home_team}</b><b>{e.away_team}</b></div><div className="live-full-score"><strong>{e.home_score}</strong><strong>{e.away_score}</strong></div></div><div className="live-full-foot"><span>Open event</span><span>{e.markets?.length||0} markets <b>›</b></span></div></a>)}</div>}
+  <p className="live-note">Source: {source==="provider"?"live provider feed":"local event database"} • Odds can be suspended or change while an event is in play.</p>
+ </div>
+ <SiteFooter/>
+ <nav className="bottom-nav"><a href="/"><Home/><span>Home</span></a><a href="/sports"><Trophy/><span>All Sports</span></a><a href="/live" className="selected"><Radio/><span>In-Play</span></a><a href="/bets"><Ticket/><span>My Bets</span></a><a href="/casino"><span className="nav-emoji">🎰</span><span>Casino</span></a></nav>
+ </main>;
 }
