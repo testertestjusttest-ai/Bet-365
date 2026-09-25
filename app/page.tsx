@@ -48,8 +48,8 @@ export default function HomePage(){
   finally{setLoading(false)}
  }
  const filtered=useMemo(()=>matches.filter(m=>(m.home+" "+m.away+" "+m.league).toLowerCase().includes(query.toLowerCase())),[query,matches]);
- const addSingle=(m:Match,o:{label:string;odd:string})=>setSingle(s=>[{id:pickKey({eventId:m.id,label:o.label}),eventId:m.id,event:m.home+" vs "+m.away,label:o.label,odd:Number(o.odd),sport:m.sport,mode:"single"},...s.filter(x=>pickKey(x)!==pickKey({eventId:m.id,label:o.label}))].slice(0,20));
- const toggleMultiple=(m:Match,o:{label:string;odd:string})=>setMultiple(s=>s.some(x=>pickKey(x)===pickKey({eventId:m.id,label:o.label}))?s.filter(x=>pickKey(x)!==pickKey({eventId:m.id,label:o.label})):[...s,{id:pickKey({eventId:m.id,label:o.label}),eventId:m.id,event:m.home+" vs "+m.away,label:o.label,odd:Number(o.odd),sport:m.sport,mode:"multiple"}].slice(0,12));
+ const addSingle=(m:Match,o:{label:string;odd:string})=>setSingle(s=>{const p:BetPick={id:pickKey({eventId:m.id,label:o.label}),eventId:m.id,event:m.home+" vs "+m.away,label:o.label,odd:Number(o.odd),sport:m.sport,mode:"single"};return [p,...s.filter(x=>pickKey(x)!==p.id)].slice(0,20)});
+ const toggleMultiple=(m:Match,o:{label:string;odd:string})=>setMultiple(s=>{const p:BetPick={id:pickKey({eventId:m.id,label:o.label}),eventId:m.id,event:m.home+" vs "+m.away,label:o.label,odd:Number(o.odd),sport:m.sport,mode:"multiple"};return s.some(x=>x.id===p.id)?s.filter(x=>x.id!==p.id):[...s,p].slice(0,12)});
  const pressStart=(m:Match,o:{label:string;odd:string})=>{const key=m.id+"-"+o.label;longPressed.current[key]=false;timers.current[key]=setTimeout(()=>{longPressed.current[key]=true;toggleMultiple(m,o)},520)};
  const pressEnd=(m:Match,o:{label:string;odd:string})=>{const key=m.id+"-"+o.label;clearTimeout(timers.current[key]);if(!longPressed.current[key])addSingle(m,o)};
  const multipleOdds=multiple.reduce((a,x)=>a*Number(x.odd),1);
