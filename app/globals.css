@@ -114,3 +114,31 @@ body{background:#101010}
  .home-live{padding-left:12px;padding-right:12px}.content-layout{padding-left:12px;padding-right:12px}
  .footer-grid{grid-template-columns:1fr}.site-footer{padding-left:18px;padding-right:18px}.footer-bottom strong{font-size:30px}
 }
+
+.register-page{min-height:100vh;background:#262626;color:#f3f3f3;padding-bottom:90px}
+.register-top{height:76px;background:#1b2924;border-bottom:1px solid #3a4842;display:flex;align-items:center;justify-content:center;padding:0 20px;position:relative}
+.register-top>a:last-child{position:absolute;right:18px;color:#ddd;display:flex}
+.register-brand{font-size:28px;font-weight:900;letter-spacing:-1px}.register-brand span{color:#e8dc00}
+.register-card{width:min(100%,760px);margin:0 auto;background:#292929;padding:30px 28px 55px;min-height:calc(100vh - 76px)}
+.register-card h1{font-size:35px;margin:0 0 30px}
+.register-steps{display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid #4a4a4a;margin:0 -28px 32px;padding:0 28px}
+.register-steps>div{display:flex;gap:9px;align-items:center;justify-content:center;padding:0 5px 14px;color:#999;font-size:15px;font-weight:800;position:relative}
+.register-steps>div.active{color:#fff}.register-steps>div.active:after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:#23dfad}
+.register-section{display:grid;gap:17px}
+.register-section label{display:grid;gap:8px;color:#d7d7d7;font-size:14px}
+.register-section input,.register-section select{height:56px;width:100%;border:1px solid #606060;border-radius:4px;background:#393939;color:#f4f4f4;padding:0 15px;font-size:17px;outline:none}
+.register-section input:focus,.register-section select:focus{border-color:#24dfad;box-shadow:0 0 0 1px #24dfad44}
+.register-section input::placeholder{color:#bcbcbc}
+.register-help{color:#bcbcbc;font-size:14px;line-height:1.65;margin:0 0 4px}
+.register-two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.gender-switch{display:grid;grid-template-columns:1fr 1fr}
+.gender-switch button{height:52px;border:1px solid #606060;background:#383838;color:#fff;font-weight:800}.gender-switch button:first-child{border-radius:4px 0 0 4px}.gender-switch button:last-child{border-radius:0 4px 4px 0}.gender-switch button.active{border-color:#24dfad;color:#24dfad;box-shadow:inset 0 0 0 1px #24dfad}
+.verification-note{display:flex;gap:12px;padding:15px;border:1px solid #415149;background:#202f29;border-radius:6px;color:#c4d0ca;font-size:13px;line-height:1.55}
+.register-check{display:flex!important;grid-template-columns:none!important;display:flex!important;flex-direction:row!important;align-items:flex-start;gap:10px!important;line-height:1.5}
+.register-check input{width:19px!important;height:19px!important;flex:0 0 auto;padding:0!important;margin-top:2px;accent-color:#24dfad}
+.register-actions{display:flex;justify-content:space-between;gap:12px;margin-top:26px}
+.primary-action,.secondary-action{min-height:52px;border-radius:4px;padding:0 24px;font-weight:900;font-size:15px;display:inline-flex;align-items:center;justify-content:center;gap:5px}
+.primary-action{margin-left:auto;background:#23dfad;border:1px solid #23dfad;color:#062019}.primary-action:disabled{opacity:.55}
+.secondary-action{background:#393939;border:1px solid #666;color:#fff}
+.register-footnote{color:#8f8f8f;font-size:11px;line-height:1.6;margin:25px 0 0}
+@media(max-width:600px){.register-card{padding:22px 18px 48px}.register-card h1{font-size:30px;margin-bottom:25px}.register-steps{margin-left:-18px;margin-right:-18px;padding:0 18px}.register-steps>div{font-size:12px}.register-two{grid-template-columns:1fr}.register-section input,.register-section select{height:54px}.register-page .bottom-nav{display:flex}}
