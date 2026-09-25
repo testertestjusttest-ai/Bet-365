@@ -1,5 +1,5 @@
 import {NextRequest,NextResponse} from "next/server";
-import {chooseBookmaker,fetchEventMarkets,fetchEventOdds,mapMarketName} from "../../../../../../lib/feed/the-odds-api";
+import {chooseBookmaker,fetchEventMarkets,fetchEventOdds,fetchScores,mapMarketName} from "../../../../../../lib/feed/the-odds-api";
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
 
@@ -21,19 +21,12 @@ export async function GET(req:NextRequest,{params}:{params:Promise<{sport:string
     const event=await fetchEventOdds(sport,id,marketKeys.join(","),detailRegions);
     const bookmaker=chooseBookmaker(event);
     if(!bookmaker) return NextResponse.json({ok:false,error:"No bookmaker market data available"},{status:404});
-    const scoresUrl=process.env.SPORTS_FEED_API_KEY
-      ? `https://api.the-odds-api.com/v4/sports/${encodeURIComponent(sport)}/scores/?apiKey=${encodeURIComponent(process.env.SPORTS_FEED_API_KEY)}&dateFormat=iso`
-      : "";
-    let score:{home:number;away:number}|null=null;
-    if(scoresUrl){
-      const sr=await fetch(scoresUrl,{cache:"no-store",headers:{accept:"application/json"}});
-      if(sr.ok){
-        const rows=await sr.json();
-        const hit=rows.find((x:any)=>x.id===id);
-        if(hit?.scores){
-          score={home:Number(hit.scores.find((x:any)=>x.name===event.home_team)?.score||0),away:Number(hit.scores.find((x:any)=>x.name===event.away_team)?.score||0)};
-        }
-      }
+    let score:any=null;
+    try{
+      const rows=await fetchScores(sport);
+      score=rows.find((x:any)=>x.id===id) || null;
+    }catch(error:any){
+      console.warn("Provider event score lookup unavailable",error?.message);
     }
     const markets=(bookmaker.markets||[]).map((m:any)=>({
       id:hashId(m.key),
@@ -45,7 +38,7 @@ export async function GET(req:NextRequest,{params}:{params:Promise<{sport:string
     return NextResponse.json({ok:true,provider:"the_odds_api",event:{
       id:hashId(id),provider_event_id:id,sport_key:sport,sport:event.sport_title||sport,league:event.sport_title||sport,
       home_team:event.home_team,away_team:event.away_team,starts_at:event.commence_time,
-      status:new Date(event.commence_time).getTime()<=Date.now()?"live":"scheduled",
+      status:score?.completed?"finished":score?"live":"scheduled",
       home_score:score?.home||0,away_score:score?.away||0,markets
     }});
   }catch(error:any){
