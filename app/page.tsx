@@ -18,7 +18,7 @@ const fallback:Match[]=[
 ];
 
 export default function HomePage(){
- const [sport,setSport]=useState("Football"),[query,setQuery]=useState(""),[matches,setMatches]=useState<Match[]>(fallback);
+ const [sport,setSport]=useState("Football"),[query,setQuery]=useState(""),[matches,setMatches]=useState<Match[]>([]);
  const [loading,setLoading]=useState(true),[live,setLive]=useState<LiveEvent[]>([]),[liveLoading,setLiveLoading]=useState(true),[liveSource,setLiveSource]=useState("database"),[eventSource,setEventSource]=useState("database");
  const [single,setSingle]=useState<BetPick[]>([]),[multiple,setMultiple]=useState<BetPick[]>([]),[ready,setReady]=useState(false),[slipMode,setSlipMode]=useState<"single"|"multiple">("single"),[singleStakes,setSingleStakes]=useState<Record<string,string>>({}),[multipleStake,setMultipleStake]=useState(""),[placeMessage,setPlaceMessage]=useState("");
  const [lang,setLang]=useState("English"),[showLang,setShowLang]=useState(false),[userEmail,setUserEmail]=useState<string|null>(null),[authReady,setAuthReady]=useState(false),[eventTab,setEventTab]=useState("Popular");
@@ -39,8 +39,8 @@ export default function HomePage(){
      try{
        const r=await fetch("/api/events?status=live&page=0&pageSize=100",{cache:"no-store"});
        const j=await r.json();
-       if(active){setLive(j.events||[]);setLiveSource(j.source||"database")}
-     }catch{if(active){setLive([]);setLiveSource("database")}}
+       if(active){setLive(j.events||[]);setLiveSource(j.source||"provider")}
+     }catch{if(active){setLive([]);setLiveSource("provider")}}
      finally{if(active)setLiveLoading(false)}
    }
    loadLive(); const t=process.env.NEXT_PUBLIC_LIVE_AUTO_REFRESH==="true"?setInterval(loadLive,30000):null; return()=>{active=false;if(t)clearInterval(t)};
@@ -66,7 +66,7 @@ export default function HomePage(){
        return {id:e.id,sport:e.sport,sport_key:e.sport_key,league:e.league||selected,time:new Date(e.starts_at).toLocaleString(undefined,{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"}),home:e.home_team,away:e.away_team,status:e.status,homeScore:e.home_score||0,awayScore:e.away_score||0,odds};
      });
      setMatches(rows);
-   }catch(e){console.warn("Event data unavailable",e);setEventSource("database");setMatches(selected==="Football"&&tab==="Popular"?fallback:[])}
+   }catch(e){console.warn("Event data unavailable",e);setEventSource("provider");setMatches([])}
    finally{setLoading(false)}
  }
 
