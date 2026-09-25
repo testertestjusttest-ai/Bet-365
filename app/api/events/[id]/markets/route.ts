@@ -3,8 +3,8 @@ import {createClient} from "@supabase/supabase-js";
 import {fetchEventMarkets,fetchEventOdds,mapMarketName} from "../../../../../lib/feed/the-odds-api";
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
+
 async function loadProviderEvent(id:string){
- const {id}=await params;
  const url=process.env.NEXT_PUBLIC_SUPABASE_URL,key=process.env.SUPABASE_SERVICE_ROLE_KEY;
  if(!url||!key) throw new Error("Server sports feed is not configured.");
  const db=createClient(url,key,{auth:{autoRefreshToken:false,persistSession:false}});
@@ -14,6 +14,7 @@ async function loadProviderEvent(id:string){
 }
 
 export async function GET(req:NextRequest,{params}:{params:Promise<{id:string}>}){
+ const {id}=await params;
  const url=process.env.NEXT_PUBLIC_SUPABASE_URL,key=process.env.SUPABASE_SERVICE_ROLE_KEY;
  if(!url||!key) return NextResponse.json({ok:false,error:"Server sports feed is not configured."},{status:503});
  const db=createClient(url,key,{auth:{autoRefreshToken:false,persistSession:false}});
@@ -31,6 +32,7 @@ export async function GET(req:NextRequest,{params}:{params:Promise<{id:string}>}
   return NextResponse.json({ok:true,source:"provider",availableMarketKeys:keys,markets:(odds.bookmakers?.[0]?.markets||[]).map((m:any)=>({key:m.key,name:mapMarketName(m.key),outcomes:m.outcomes}))});
  }catch(error:any){return NextResponse.json({ok:false,error:error?.message||"Event market lookup failed"},{status:502});}
 }
+
 export async function POST(req:NextRequest,{params}:{params:Promise<{id:string}>}){
  try{
   const {id}=await params;
