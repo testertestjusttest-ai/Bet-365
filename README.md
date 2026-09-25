@@ -16,3 +16,6 @@ profiles, wallets, events, markets, selections, bets, bet_selections.
 - Apply supabase/schema.sql through Supabase migrations.
 - Add age/KYC, jurisdiction controls, responsible-gambling controls, audit logging and secure payment integrations before enabling real-money operations.
 - Keep service-role keys server-side only.
+
+## Deployment
+- Build fixes are committed on main; Vercel should deploy the latest main commit automatically.
