@@ -21,7 +21,8 @@ export function feedConfig(){
 }
 
 async function getJson<T>(url:string):Promise<T>{
-  const res=await fetch(url,{cache:"no-store",headers:{"accept":"application/json"}});
+  const isLiveFeed=url.includes("/odds?") || url.includes("/scores?");
+  const res=await fetch(url,isLiveFeed ? {next:{revalidate:15},headers:{"accept":"application/json"}} : {cache:"no-store",headers:{"accept":"application/json"}});
   if(!res.ok) throw new Error("Feed request failed: "+res.status+" "+await res.text());
   return res.json() as Promise<T>;
 }
