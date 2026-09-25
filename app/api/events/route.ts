@@ -178,18 +178,9 @@ async function providerEvents(requestedSport: string | null, status: string | nu
   for (const sport of selected) {
     try {
       const odds = await fetchOdds(sport.key, freeMode ? "h2h" : undefined);
-      const scoreMap = new Map<string, any>();
-      let scores: any[] = [];
-      try {
-        scores = await fetchScores(sport.key);
-      } catch {
-        scores = [];
-      }
-      for (const score of scores) scoreMap.set(score.id, score);
-
       for (const raw of odds) {
         const start = new Date(raw.commence_time).getTime();
-        const item = normalizeProviderEvent(raw, scoreMap.get(raw.id));
+        const item = normalizeProviderEvent(raw, undefined);
         if (status === "scheduled" && (item.status !== "scheduled" || start <= Date.now())) continue;
         if (status === "finished" && item.status !== "finished") continue;
 
@@ -256,10 +247,15 @@ export async function GET(req: NextRequest) {
 
   if (!url || !key) {
     return NextResponse.json(
-      { ok: false, error: "Sports data is not configured." },
+      { ok: false, error: "Sports provider is not configured. No demo/local fixtures are served.", source: "provider" },
       { status: 503 }
     );
   }
+
+  return NextResponse.json(
+    { ok: false, error: "Sports provider is unavailable. No demo/local fixtures are served.", source: "provider" },
+    { status: 503 }
+  );
 
   const db = createClient(url, key, {
     auth: { autoRefreshToken: false, persistSession: false },
