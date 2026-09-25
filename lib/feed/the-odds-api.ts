@@ -8,12 +8,14 @@ const BASE="https://api.the-odds-api.com/v4";
 export function feedConfig(){
   const apiKey=process.env.SPORTS_FEED_API_KEY;
   if(!apiKey) throw new Error("SPORTS_FEED_API_KEY is not configured");
+  const freeMode=process.env.SPORTS_FEED_FREE_MODE !== "false";
   const sports=(process.env.SPORTS_FEED_SPORTS||"auto").split(",").map(s=>s.trim()).filter(Boolean);
   return {
     apiKey,
     sports,
-    regions:process.env.SPORTS_FEED_REGION||"eu",
-    markets:process.env.SPORTS_FEED_MARKETS||"h2h,spreads,totals",
+    regions:freeMode ? "us" : (process.env.SPORTS_FEED_REGION||"eu"),
+    markets:freeMode ? "h2h" : (process.env.SPORTS_FEED_MARKETS||"h2h,spreads,totals"),
+    freeMode,
     bookmaker:process.env.SPORTS_FEED_BOOKMAKER||""
   };
 }
