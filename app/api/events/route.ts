@@ -107,6 +107,11 @@ function parseDate(value: string | null) {
 }
 
 async function providerEvents(requestedSport: string | null, status: string | null, from: string | null, to: string | null) {
+  // The free Odds API plan has a small monthly quota. Keep the public
+  // browsing path to one featured market and make the event-detail endpoint
+  // responsible for additional markets. Set SPORTS_FEED_FREE_MODE=false when
+  // using a paid quota and wanting the full configured market set.
+  const freeMode = process.env.SPORTS_FEED_FREE_MODE !== "false";
   const configured = (process.env.SPORTS_FEED_SPORTS || "auto")
     .split(",")
     .map((x) => x.trim())
@@ -129,26 +134,28 @@ async function providerEvents(requestedSport: string | null, status: string | nu
       return Number.isFinite(startMs) && startMs <= now;
     });
 
-    // Scores are optional enrichment. A live event must not disappear merely
-    // because its sport/league is not yet covered by the scores endpoint.
-    const bySport = new Map<string, any[]>();
-    for (const event of liveRaw) {
-      const key = String(event.sport_key || "");
-      if (!bySport.has(key)) bySport.set(key, []);
-      bySport.get(key)!.push(event);
-    }
-
+    // On the free plan, do not fan out into one /scores request per live sport.
+    // That would consume the monthly quota very quickly. Paid mode keeps the
+    // score enrichment behaviour.
     const scoreMap = new Map<string, any>();
-    await Promise.all(
-      [...bySport.keys()].map(async (sportKey) => {
-        try {
-          const scores = await fetchScores(sportKey);
-          for (const score of scores) scoreMap.set(score.id, score);
-        } catch (error: any) {
-          console.warn("Provider score enrichment unavailable", sportKey, error?.message);
-        }
-      })
-    );
+    if (!freeMode) {
+      const bySport = new Map<string, any[]>();
+      for (const event of liveRaw) {
+        const key = String(event.sport_key || "");
+        if (!bySport.has(key)) bySport.set(key, []);
+        bySport.get(key)!.push(event);
+      }
+      await Promise.all(
+        [...bySport.keys()].map(async (sportKey) => {
+          try {
+            const scores = await fetchScores(sportKey);
+            for (const score of scores) scoreMap.set(score.id, score);
+          } catch (error: any) {
+            console.warn("Provider score enrichment unavailable", sportKey, error?.message);
+          }
+        })
+      );
+    }
 
     const results = liveRaw.map((event: any) => {
       const item = normalizeProviderEvent(event, scoreMap.get(event.id));
@@ -180,7 +187,7 @@ async function providerEvents(requestedSport: string | null, status: string | nu
 
   for (const sport of selected) {
     try {
-      const odds = await fetchOdds(sport.key);
+      const odds = await fetchOdds(sport.key, freeMode ? "h2h" : undefined);
       const scoreMap = new Map<string, any>();
       let scores: any[] = [];
       try {
