@@ -2,7 +2,7 @@
 import {ChevronRight,Gamepad2,Home,Radio,Search,Ticket,Trophy} from "lucide-react";
 import SiteFooter from "../../components/site-footer";
 
-const providers=[
+type Provider={name:string;full:string;type:string;logo?:string};\n\nconst providers:Provider[]=[
  {name:"JILI",full:"JILI",type:"Slots • Fishing • Table",logo:"https://www.google.com/s2/favicons?domain=jiligames.com&sz=128"},
  {name:"JDB",full:"JDB",type:"Slots • Arcade • Table",logo:"https://www.google.com/s2/favicons?domain=jdbgaming.com&sz=128"},
  {name:"Pragmatic Play",full:"Pragmatic Play",type:"Slots • Live Casino",logo:"https://www.google.com/s2/favicons?domain=pragmaticplay.com&sz=128"},
@@ -67,7 +67,7 @@ export default function Casino(){
    <div className="casino-provider-grid">
     {filtered.map((provider,index)=><a className="casino-provider-card" href={"/casino?provider="+encodeURIComponent(provider.name)} key={provider.name}>
       <div className={"casino-provider-mark provider-mark-"+(index%8)}>
-        {provider.logo ? <img src={provider.logo} alt="" loading="lazy" onError={(e)=>{e.currentTarget.style.display="none"}}/> : <span>{initials(provider.name)}</span>}
+        {provider.logo ? <><img src={provider.logo} alt="" loading="lazy" onError={(e)=>{e.currentTarget.style.display="none"}}/><span>{initials(provider.name)}</span></> : <span>{initials(provider.name)}</span>}
       </div>
       <div><b>{provider.full}</b><small>{provider.type}</small></div>
       <ChevronRight size={19}/>
