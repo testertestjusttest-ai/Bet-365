@@ -1,12 +1,12 @@
 "use client";
-import {FormEvent,useState} from "react";
+import {FormEvent,useEffect,useState} from "react";
 import {createClient} from "../../lib/supabase-browser";
 
 export default function Login(){
   const [email,setEmail]=useState("");
   const [password,setPassword]=useState("");
   const [error,setError]=useState("");
-  const [loading,setLoading]=useState(false);
+  const [loading,setLoading]=useState(false);\n  const [nextPath,setNextPath]=useState("/account");\n\n  useEffect(()=>{\n    const next=new URLSearchParams(window.location.search).get("next");\n    if(next&&next.startsWith("/"))setNextPath(next);\n  },[]);
 
   async function submit(e:FormEvent){
     e.preventDefault(); setError(""); setLoading(true);
@@ -14,7 +14,7 @@ export default function Login(){
       const supabase=createClient();
       const {error}=await supabase.auth.signInWithPassword({email,password});
       if(error) throw error;
-      window.location.href="/account";
+      window.location.href=nextPath;
     }catch(err){
       setError(err instanceof Error ? err.message : "Unable to log in. If your email needs confirmation, confirm it first and try again.");
     }finally{setLoading(false);}
