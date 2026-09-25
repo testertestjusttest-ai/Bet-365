@@ -7,12 +7,12 @@ import {createClient} from "../../lib/supabase-browser";
 const items=[
  {href:"/bets",icon:Ticket,title:"My Bets",sub:"Open, settled and bet history"},
  {href:"/cashier",icon:WalletCards,title:"Cashier",sub:"Deposit, withdrawal and transaction requests"},
- {href:"#profile",icon:CircleUserRound,title:"Profile details",sub:"Personal details and account information"},
- {href:"#verification",icon:FileCheck,title:"Verification",sub:"KYC and account verification status"},
- {href:"#security",icon:ShieldCheck,title:"Security",sub:"Password, sessions and account protection"},
- {href:"#limits",icon:SlidersHorizontal,title:"Responsible gambling",sub:"Deposit, betting and session limits"},
- {href:"#notifications",icon:Bell,title:"Notifications",sub:"Odds, bets and account alerts"},
- {href:"#support",icon:Headphones,title:"Help & support",sub:"Contact support and resolve account issues"},
+ {href:"/account/profile",icon:CircleUserRound,title:"Profile details",sub:"Personal details and account information"},
+ {href:"/account/verification",icon:FileCheck,title:"Verification",sub:"KYC and account verification status"},
+ {href:"/account/security",icon:ShieldCheck,title:"Security",sub:"Password, sessions and account protection"},
+ {href:"/account/limits",icon:SlidersHorizontal,title:"Responsible gambling",sub:"Deposit, betting and session limits"},
+ {href:"/account/notifications",icon:Bell,title:"Notifications",sub:"Odds, bets and account alerts"},
+ {href:"/account/support",icon:Headphones,title:"Help & support",sub:"Contact support and resolve account issues"},
 ];
 
 export default function Account(){
@@ -27,11 +27,7 @@ export default function Account(){
    <div className="top-actions"><a className="login-btn" href="/">Home</a></div>
   </header>
   <div className="account-wrap">
-   <section className="account-hero">
-    <div className="account-avatar"><CircleUserRound size={32}/></div>
-    <div><span className="eyebrow">MY ACCOUNT</span><h1>Account</h1><p>{email||"Checking your session…"}</p></div>
-    <button className="account-logout" onClick={logout} disabled={signingOut}><LogOut size={17}/>{signingOut?"Signing out…":"Log out"}</button>
-   </section>
+   <a className="account-hero account-hero-link" href="/account/profile"><div className="account-avatar"><CircleUserRound size={32}/></div><div><span className="eyebrow">MY ACCOUNT</span><h1>Account</h1><p>{email||"Checking your session…"}</p></div><ChevronRight size={22}/></a>
    <section className="account-balance-grid">
     <a href="/cashier"><span>Cashier</span><b>Deposit & Withdraw</b><small>Manage your balance</small><ChevronRight/></a>
     <a href="/bets"><span>My Bets</span><b>Bet history</b><small>Open & settled bets</small><ChevronRight/></a>
@@ -40,14 +36,7 @@ export default function Account(){
    <section className="account-menu">
     {items.map(({href,icon:Icon,title,sub})=><a className="account-menu-row" href={href} key={title}><span className="account-menu-icon"><Icon size={19}/></span><span><b>{title}</b><small>{sub}</small></span><ChevronRight size={18}/></a>)}
    </section>
-   <section className="account-panels">
-    <article id="profile"><h3>Profile details</h3><p>Account email</p><b>{email||"Not signed in"}</b></article>
-    <article id="verification"><h3>Verification</h3><p>Identity and age verification</p><span className="account-status">Review required when real-money services are enabled</span></article>
-    <article id="security"><h3>Security</h3><p><KeyRound size={15}/> Keep your password private and use a unique password.</p></article>
-    <article id="limits"><h3>Responsible gambling</h3><p>Set betting, deposit and session limits before using real-money features.</p></article>
-    <article id="notifications"><h3>Notifications</h3><p>Manage account, odds and bet alerts.</p></article>
-    <article id="support"><h3>Help & support</h3><p>Support centre and account assistance.</p></article>
-   </section>
+   <section className="account-logout-panel"><button className="account-logout account-logout-bottom" onClick={logout} disabled={signingOut}><LogOut size={17}/>{signingOut?"Signing out…":"Log out"}</button></section>
   </div>
  </main>;
 }
