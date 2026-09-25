@@ -10,7 +10,7 @@ type LiveEvent={id:string;sport:string;sport_key?:string;league:string;home_team
 
 const sports=[
   ["⚽","Football"],["🏀","Basketball"],["🎾","Tennis"],["🏈","NFL"],["🏏","Cricket"],
-  ["🏒","Ice Hockey"],["🏉","Rugby"],["🥊","Boxing"],["🥋","MMA"],["🏎️","Motor Sports"],["⛳","Golf"],["🎯","Darts"]
+  ["🏒","Ice Hockey"],["⚽","Futsal"],["🏐","Volleyball"],["🤾","Handball"],["🏉","Rugby"],["🥊","Boxing"],["🥋","MMA"],["🏎️","Motor Sports"],["🏓","Table Tennis"],["🏸","Badminton"],["⛳","Golf"],["🎯","Darts"],["🎮","Esports"]
 ];
 const fallback:Match[]=[
  {id:1,sport:"Football",league:"UEFA Champions League",time:"Today • 20:00",home:"Manchester City",away:"Real Madrid",status:"scheduled",homeScore:0,awayScore:0,odds:[{label:"1",odd:"1.72"},{label:"X",odd:"3.90"},{label:"2",odd:"4.80"}]},
