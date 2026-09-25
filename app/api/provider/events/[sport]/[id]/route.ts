@@ -10,6 +10,7 @@ export async function GET(req:NextRequest,{params}:{params:Promise<{sport:string
   try{
     const {sport,id}=await params;
     const configured=process.env.SPORTS_FEED_DETAIL_MARKETS||"";
+    const detailRegions=process.env.SPORTS_FEED_DETAIL_REGION||"us,eu";
     let marketKeys=configured.split(",").map(x=>x.trim()).filter(Boolean);
     if(!marketKeys.length){
       const available=await fetchEventMarkets(sport,id);
@@ -17,7 +18,7 @@ export async function GET(req:NextRequest,{params}:{params:Promise<{sport:string
       marketKeys=(book?.markets||[]).map((m:any)=>m.key).slice(0,12);
     }
     if(!marketKeys.length) marketKeys=(process.env.SPORTS_FEED_MARKETS||"h2h,spreads,totals").split(",").map(x=>x.trim()).filter(Boolean);
-    const event=await fetchEventOdds(sport,id,marketKeys.join(","));
+    const event=await fetchEventOdds(sport,id,marketKeys.join(","),detailRegions);
     const bookmaker=chooseBookmaker(event);
     if(!bookmaker) return NextResponse.json({ok:false,error:"No bookmaker market data available"},{status:404});
     const scoresUrl=process.env.SPORTS_FEED_API_KEY
