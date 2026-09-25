@@ -6,7 +6,13 @@ export default function Login(){
   const [email,setEmail]=useState("");
   const [password,setPassword]=useState("");
   const [error,setError]=useState("");
-  const [loading,setLoading]=useState(false);\n  const [nextPath,setNextPath]=useState("/account");\n\n  useEffect(()=>{\n    const next=new URLSearchParams(window.location.search).get("next");\n    if(next&&next.startsWith("/"))setNextPath(next);\n  },[]);
+  const [loading,setLoading]=useState(false);
+  const [nextPath,setNextPath]=useState("/account");
+
+  useEffect(()=>{
+    const next=new URLSearchParams(window.location.search).get("next");
+    if(next&&next.startsWith("/"))setNextPath(next);
+  },[]);
 
   async function submit(e:FormEvent){
     e.preventDefault(); setError(""); setLoading(true);
