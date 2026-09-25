@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";\nimport { createClient } from "../../lib/supabase-browser";
 
 type DemoBet = {
   status?: string;
@@ -10,7 +10,7 @@ type DemoBet = {
 };
 
 export default function Bets() {
-  const [items, setItems] = useState<DemoBet[]>([]);
+  const [items, setItems] = useState<DemoBet[]>([]);\n  const [userEmail, setUserEmail] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -41,7 +41,7 @@ export default function Bets() {
 
         {items.length === 0 ? (
           <div className="loading-card">
-            No bets yet. Select odds from Sports and log in to continue.
+            {userEmail ? "No settled or open bets are available in this view yet." : "No bets yet. Select odds from Sports and log in to continue."}
           </div>
         ) : (
           items.map((item, index) => (
