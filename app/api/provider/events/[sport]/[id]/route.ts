@@ -13,7 +13,7 @@ export async function GET(req:NextRequest,{params}:{params:Promise<{sport:string
     const detailRegions=process.env.SPORTS_FEED_DETAIL_REGION||"us,eu";
     let marketKeys=configured.split(",").map(x=>x.trim()).filter(Boolean);
     if(!marketKeys.length){
-      const available=await fetchEventMarkets(sport,id);
+      const available=await fetchEventMarkets(sport,id,detailRegions);
       const book=available.bookmakers?.[0];
       marketKeys=(book?.markets||[]).map((m:any)=>m.key).slice(0,12);
     }
