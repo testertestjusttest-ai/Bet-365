@@ -21,13 +21,13 @@ export default function HomePage(){
  const [sport,setSport]=useState("Football"),[query,setQuery]=useState(""),[matches,setMatches]=useState<Match[]>(fallback);
  const [loading,setLoading]=useState(true),[live,setLive]=useState<LiveEvent[]>([]),[liveLoading,setLiveLoading]=useState(true),[liveSource,setLiveSource]=useState("database"),[eventSource,setEventSource]=useState("database");
  const [single,setSingle]=useState<BetPick[]>([]),[multiple,setMultiple]=useState<BetPick[]>([]),[ready,setReady]=useState(false);
- const [lang,setLang]=useState("English"),[showLang,setShowLang]=useState(false),[userEmail,setUserEmail]=useState<string|null>(null),[eventTab,setEventTab]=useState("Popular");
+ const [lang,setLang]=useState("English"),[showLang,setShowLang]=useState(false),[userEmail,setUserEmail]=useState<string|null>(null),[authReady,setAuthReady]=useState(false),[eventTab,setEventTab]=useState("Popular");
  const timers=useRef<Record<string,ReturnType<typeof setTimeout>>>({}); const longPressed=useRef<Record<string,boolean>>({});
 
  useEffect(()=>{
    setLang(localStorage.getItem("betnow365-language")||"English");
    const saved=readBetSlip();setSingle(saved.single);setMultiple(saved.multiple);setReady(true);
-   const supabase=createClient();supabase.auth.getSession().then(({data})=>setUserEmail(data.session?.user?.email||null));
+   const supabase=createClient();supabase.auth.getUser().then(({data})=>{setUserEmail(data.user?.email||null);setAuthReady(true)}).catch(()=>setAuthReady(true));
    const {data}=supabase.auth.onAuthStateChange((_event,session)=>setUserEmail(session?.user?.email||null));
    return()=>data.subscription.unsubscribe();
  },[]);
