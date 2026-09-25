@@ -2,7 +2,7 @@
 import {useEffect,useMemo,useRef,useState} from "react";
 import {ChevronRight,Globe,Home,Search,Ticket,UserRound,Radio,Trophy,Clock3,RefreshCw} from "lucide-react";
 import {createClient} from "../lib/supabase-browser";
-import {readBetSlip,writeBetSlip,pickKey,BetPick} from "../lib/betslip";
+import {readBetSlip,writeBetSlip,pickKey,BetPick,recordDemoBet} from "../lib/betslip";
 import SiteFooter from "../components/site-footer";
 
 type Match={id:any;sport:string;sport_key?:string;league:string;time:string;home:string;away:string;status:string;homeScore:number;awayScore:number;odds:{label:string;odd:string}[]};
@@ -20,7 +20,7 @@ const fallback:Match[]=[
 export default function HomePage(){
  const [sport,setSport]=useState("Football"),[query,setQuery]=useState(""),[matches,setMatches]=useState<Match[]>(fallback);
  const [loading,setLoading]=useState(true),[live,setLive]=useState<LiveEvent[]>([]),[liveLoading,setLiveLoading]=useState(true),[liveSource,setLiveSource]=useState("database"),[eventSource,setEventSource]=useState("database");
- const [single,setSingle]=useState<BetPick[]>([]),[multiple,setMultiple]=useState<BetPick[]>([]),[ready,setReady]=useState(false);
+ const [single,setSingle]=useState<BetPick[]>([]),[multiple,setMultiple]=useState<BetPick[]>([]),[ready,setReady]=useState(false),[slipMode,setSlipMode]=useState<"single"|"multiple">("single"),[singleStakes,setSingleStakes]=useState<Record<string,string>>({}),[multipleStake,setMultipleStake]=useState(""),[placeMessage,setPlaceMessage]=useState("");
  const [lang,setLang]=useState("English"),[showLang,setShowLang]=useState(false),[userEmail,setUserEmail]=useState<string|null>(null),[authReady,setAuthReady]=useState(false),[eventTab,setEventTab]=useState("Popular");
  const timers=useRef<Record<string,ReturnType<typeof setTimeout>>>({}); const longPressed=useRef<Record<string,boolean>>({});
 
@@ -43,7 +43,7 @@ export default function HomePage(){
      }catch{if(active){setLive([]);setLiveSource("database")}}
      finally{if(active)setLiveLoading(false)}
    }
-   loadLive(); const t=setInterval(loadLive,30000); return()=>{active=false;clearInterval(t)};
+   loadLive(); const t=process.env.NEXT_PUBLIC_LIVE_AUTO_REFRESH==="true"?setInterval(loadLive,30000):null; return()=>{active=false;if(t)clearInterval(t)};
  },[]);
  useEffect(()=>{if(ready)writeBetSlip({single,multiple})},[single,multiple,ready]);
  useEffect(()=>{const sync=()=>{const saved=readBetSlip();setSingle(saved.single);setMultiple(saved.multiple)};window.addEventListener("betnow365-betslip",sync);return()=>window.removeEventListener("betnow365-betslip",sync)},[]);
@@ -75,7 +75,7 @@ export default function HomePage(){
  const toggleMultiple=(m:Match,o:{label:string;odd:string})=>setMultiple(s=>{const p:BetPick={id:pickKey({eventId:m.id,label:o.label}),eventId:m.id,event:m.home+" vs "+m.away,label:o.label,odd:Number(o.odd),sport:m.sport,mode:"multiple"};return s.some(x=>x.id===p.id)?s.filter(x=>x.id!==p.id):[...s,p].slice(0,12)});
  const pressStart=(m:Match,o:{label:string;odd:string})=>{const key=m.id+"-"+o.label;longPressed.current[key]=false;timers.current[key]=setTimeout(()=>{longPressed.current[key]=true;toggleMultiple(m,o)},520)};
  const pressEnd=(m:Match,o:{label:string;odd:string})=>{const key=m.id+"-"+o.label;clearTimeout(timers.current[key]);if(!longPressed.current[key])addSingle(m,o)};
- const multipleOdds=multiple.reduce((a,x)=>a*Number(x.odd),1);
+ const multipleOdds=multiple.reduce((a,x)=>a*Number(x.odd),1); const placeDemoBet=()=>{setPlaceMessage("");if(!userEmail){location.href="/login?next=/";return;}const selections=slipMode==="single"?single:multiple;const stake=slipMode==="single"?Number(singleStakes[selections[0]?.id]||0):Number(multipleStake||0);if(!selections.length){setPlaceMessage("Select at least one outcome first.");return;}if(!Number.isFinite(stake)||stake<=0){setPlaceMessage("Enter your stake amount first.");return;}const combined=slipMode==="single"?Number(selections[0].odd):multipleOdds;recordDemoBet({id:crypto.randomUUID(),betType:slipMode,selections,stake,potentialReturn:Number((stake*combined).toFixed(2)),status:"demo_accepted",createdAt:new Date().toISOString()});setPlaceMessage("Demo bet accepted for testing. No real-money wallet is charged.");};
 
  return <main className="app-shell">
   <header className="topbar">
@@ -124,11 +124,14 @@ export default function HomePage(){
 
    <aside className="betslip">
     <div className="slip-head"><div><b>Bet Slip</b><small>{single.length+multiple.length} selections</small></div><Ticket size={20}/></div>
-    <div className="slip-tabs"><button className={single.length?"active":""}>Singles {single.length?"("+single.length+")":""}</button><button className={multiple.length?"active":""}>Multiple {multiple.length?"("+multiple.length+")":""}</button></div>
-    {multiple.length>0&&<div className="builder-box"><b>Multiple selected</b><span>{multiple.length} legs • combined odds <strong>{multipleOdds.toFixed(2)}</strong></span><small>Press and hold an odd to add/remove a leg.</small></div>}
-    {single.length===0&&multiple.length===0?<div className="empty-slip"><Ticket size={34}/><b>Your bet slip is empty</b><span>Tap an odd for a single or hold it for a multiple.</span></div>:<>{[...single,...multiple].map(s=><div className="slip-item" key={s.id}><button onClick={()=>{setSingle(x=>x.filter(y=>y.id!==s.id));setMultiple(x=>x.filter(y=>y.id!==s.id))}}>×</button><small>{s.event}</small><div><b>{s.label}</b><strong>{Number(s.odd).toFixed(2)}</strong></div></div>)}<div className="stake-row"><span>Multiple potential odds</span><b>{multiple.length?multipleOdds.toFixed(2):"—"}</b></div>{userEmail?<a className="place-btn" href="/bets">Continue to My Bets</a>:<a className="place-btn" href="/login?next=/">Log in to place bet</a>}</>}
-   </aside>
-  </div>
+    <div className="slip-tabs"><button className={slipMode==="single"?"active":""} onClick={()=>setSlipMode("single")}>Singles {single.length?"("+single.length+")":""}</button><button className={slipMode==="multiple"?"active":""} onClick={()=>setSlipMode("multiple")} disabled={multiple.length<2&&single.length<2}>Multiple {multiple.length?"("+multiple.length+")":""}</button></div>
+    {slipMode==="single"&&single.length>0?single.map(p=><div className="slip-item" key={p.id}><button onClick={()=>setSingle(x=>x.filter(y=>y.id!==p.id))}>×</button><small>{p.event}</small><div><b>{p.label}</b><strong>{Number(p.odd).toFixed(2)}</strong></div><input className="stake-input" inputMode="decimal" placeholder="Stake" value={singleStakes[p.id]||""} onChange={e=>setSingleStakes(x=>({...x,[p.id]:e.target.value}))}/><div className="return-row"><span>Potential return</span><strong>{Number((Number(singleStakes[p.id]||0)*Number(p.odd)).toFixed(2)).toFixed(2)}</strong></div></div>)
+    :slipMode==="multiple"&&multiple.length>0?<><div className="builder-box"><b>Multiple</b><span>{multiple.length} legs • combined odds <strong>{multipleOdds.toFixed(2)}</strong></span></div>{multiple.map(p=><div className="slip-item" key={p.id}><button onClick={()=>setMultiple(x=>x.filter(y=>y.id!==p.id))}>×</button><small>{p.event}</small><div><b>{p.label}</b><strong>{Number(p.odd).toFixed(2)}</strong></div></div>)}<div className="stake-block"><label>Stake<input className="stake-input stake-main" inputMode="decimal" placeholder="0.00" value={multipleStake} onChange={e=>setMultipleStake(e.target.value)}/></label><div className="return-row"><span>Potential return</span><strong>{Number((Number(multipleStake||0)*multipleOdds).toFixed(2)).toFixed(2)}</strong></div></div></>
+    :<div className="empty-slip"><Ticket size={34}/><b>Your bet slip is empty</b><span>Tap an odd for Single. Choose Multiple to build an accumulator.</span></div>}
+    {placeMessage&&<div className="bet-message">{placeMessage}</div>}
+    {(slipMode==="single"?single.length>0:multiple.length>1)&&<button className="place-btn" onClick={placeDemoBet}>{authReady?(userEmail?"Place Demo Bet":"Log in to continue"):"Checking account…"}</button>}
+    <small className="demo-mode-note">Test mode: no real-money wallet is charged.</small>
+   </aside>  </div>
   <SiteFooter/>
   <nav className="bottom-nav"><a href="/"><Home/><span>Home</span></a><a href="/sports"><Trophy/><span>All Sports</span></a><a href="/live"><Radio/><span>In-Play</span></a><a href="/bets" className="selected"><Ticket/><span>My Bets</span></a><a href="/casino"><span className="nav-emoji">🎰</span><span>Casino</span></a></nav>
  </main>;
