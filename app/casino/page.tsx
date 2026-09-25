@@ -3,10 +3,10 @@ import {ChevronRight,Gamepad2,Home,Radio,Search,Ticket,Trophy} from "lucide-reac
 import SiteFooter from "../../components/site-footer";
 
 const providers=[
- {name:"JILI",full:"JILI",type:"Slots • Fishing • Table"},
- {name:"JDB",full:"JDB",type:"Slots • Arcade • Table"},
- {name:"Pragmatic Play",full:"Pragmatic Play",type:"Slots • Live Casino"},
- {name:"PG Soft",full:"PG Soft",type:"Slots • Mobile Games"},
+ {name:"JILI",full:"JILI",type:"Slots • Fishing • Table",logo:"https://www.google.com/s2/favicons?domain=jiligames.com&sz=128"},
+ {name:"JDB",full:"JDB",type:"Slots • Arcade • Table",logo:"https://www.google.com/s2/favicons?domain=jdbgaming.com&sz=128"},
+ {name:"Pragmatic Play",full:"Pragmatic Play",type:"Slots • Live Casino",logo:"https://www.google.com/s2/favicons?domain=pragmaticplay.com&sz=128"},
+ {name:"PG Soft",full:"PG Soft",type:"Slots • Mobile Games",logo:"https://www.google.com/s2/favicons?domain=pgsoft.com&sz=128"},
  {name:"FC",full:"FC",type:"Slots • Casino"},
  {name:"COMBO",full:"COMBO",type:"Slots • Table"},
  {name:"LET'S GO",full:"Let's Go!",type:"Slots • Arcade"},
@@ -14,32 +14,32 @@ const providers=[
  {name:"Mega",full:"Mega",type:"Slots • Table"},
  {name:"YellowBat",full:"YellowBat",type:"Slots • Casino"},
  {name:"FastSpin",full:"FastSpin",type:"Slots • Casino"},
- {name:"Spadegaming",full:"Spadegaming",type:"Slots • Table"},
+ {name:"Spadegaming",full:"Spadegaming",type:"Slots • Table",logo:"https://www.google.com/s2/favicons?domain=spadegaming.com&sz=128"},
  {name:"FiveG",full:"FiveG",type:"Slots • Casino"},
  {name:"NextSpin",full:"NextSpin",type:"Slots • Casino"},
  {name:"GTF",full:"GTF",type:"Slots • Arcade"},
  {name:"Lucky365",full:"Lucky365",type:"Slots • Casino"},
  {name:"KM",full:"KM",type:"Slots • Table"},
- {name:"Playtech",full:"Playtech",type:"Slots • Live Casino"},
+ {name:"Playtech",full:"Playtech",type:"Slots • Live Casino",logo:"https://www.google.com/s2/favicons?domain=playtech.com&sz=128"},
  {name:"Play8",full:"Play8",type:"Slots • Casino"},
  {name:"Red Tiger",full:"Red Tiger",type:"Slots • Casino"},
  {name:"Drangoon",full:"Drangoon",type:"Slots • Fishing"},
  {name:"Big Time Gaming",full:"Big Time Gaming",type:"Slots • Megaways"},
  {name:"Creative Gaming",full:"Creative Gaming",type:"Slots • Casino"},
  {name:"OCTOPLAY",full:"Octoplay",type:"Slots • Casino"},
- {name:"Relax Gaming",full:"Relax Gaming",type:"Slots • Casino"},
+ {name:"Relax Gaming",full:"Relax Gaming",type:"Slots • Casino",logo:"https://www.google.com/s2/favicons?domain=relax-gaming.com&sz=128"},
  {name:"YL Gaming",full:"YL Gaming",type:"Slots • Casino"},
- {name:"CQ9 Gaming",full:"CQ9 Gaming",type:"Slots • Table"},
+ {name:"CQ9 Gaming",full:"CQ9 Gaming",type:"Slots • Table",logo:"https://www.google.com/s2/favicons?domain=cq9gaming.com&sz=128"},
  {name:"Joker",full:"Joker",type:"Slots • Arcade"},
- {name:"KA Gaming",full:"KA Gaming",type:"Slots • Table"},
- {name:"Evolution",full:"Evolution",type:"Live Casino"},
- {name:"NetEnt",full:"NetEnt",type:"Slots • Table"},
- {name:"Play'n GO",full:"Play'n GO",type:"Slots • Casino"},
- {name:"Hacksaw Gaming",full:"Hacksaw Gaming",type:"Slots • Casino"},
- {name:"Nolimit City",full:"Nolimit City",type:"Slots • Casino"},
- {name:"Yggdrasil",full:"Yggdrasil",type:"Slots • Table"},
+ {name:"KA Gaming",full:"KA Gaming",type:"Slots • Table",logo:"https://www.google.com/s2/favicons?domain=kagaming.com&sz=128"},
+ {name:"Evolution",full:"Evolution",type:"Live Casino",logo:"https://www.google.com/s2/favicons?domain=evolution.com&sz=128"},
+ {name:"NetEnt",full:"NetEnt",type:"Slots • Table",logo:"https://www.google.com/s2/favicons?domain=netent.com&sz=128"},
+ {name:"Play'n GO",full:"Play'n GO",type:"Slots • Casino",logo:"https://www.google.com/s2/favicons?domain=playngo.com&sz=128"},
+ {name:"Hacksaw Gaming",full:"Hacksaw Gaming",type:"Slots • Casino",logo:"https://www.google.com/s2/favicons?domain=hacksawgaming.com&sz=128"},
+ {name:"Nolimit City",full:"Nolimit City",type:"Slots • Casino",logo:"https://www.google.com/s2/favicons?domain=nolimitcity.com&sz=128"},
+ {name:"Yggdrasil",full:"Yggdrasil",type:"Slots • Table",logo:"https://www.google.com/s2/favicons?domain=yggdrasilgaming.com&sz=128"},
  {name:"Push Gaming",full:"Push Gaming",type:"Slots • Casino"},
- {name:"Spribe",full:"Spribe",type:"Crash • Instant"},
+ {name:"Spribe",full:"Spribe",type:"Crash • Instant",logo:"https://www.google.com/s2/favicons?domain=spribe.co&sz=128"},
  {name:"Ezugi",full:"Ezugi",type:"Live Casino"},
  {name:"BGaming",full:"BGaming",type:"Slots • Crash"},
  {name:"Wazdan",full:"Wazdan",type:"Slots • Casino"},
@@ -66,7 +66,9 @@ export default function Casino(){
    </div>
    <div className="casino-provider-grid">
     {filtered.map((provider,index)=><a className="casino-provider-card" href={"/casino?provider="+encodeURIComponent(provider.name)} key={provider.name}>
-      <div className={"casino-provider-mark provider-mark-"+(index%8)}><span>{initials(provider.name)}</span></div>
+      <div className={"casino-provider-mark provider-mark-"+(index%8)}>
+        {provider.logo ? <img src={provider.logo} alt="" loading="lazy" onError={(e)=>{e.currentTarget.style.display="none"}}/> : <span>{initials(provider.name)}</span>}
+      </div>
       <div><b>{provider.full}</b><small>{provider.type}</small></div>
       <ChevronRight size={19}/>
     </a>)}
