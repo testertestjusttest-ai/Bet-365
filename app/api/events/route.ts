@@ -121,50 +121,40 @@ async function providerEvents(requestedSport: string | null, status: string | nu
     : null;
 
   if (status === "live") {
-    // The Odds API's /odds/upcoming endpoint includes all currently live
-    // events across sports. This is more reliable than relying only on the
-    // scores endpoint, whose coverage is limited to selected sports/leagues.
+    // Live status is provider-authoritative. An event being past its
+    // scheduled start time is NOT enough to call it live.
     const liveOdds = await fetchOdds("upcoming", "h2h");
     const now = Date.now();
-
-    const liveRaw = liveOdds.filter((event: any) => {
+    const candidates = liveOdds.filter((event: any) => {
       if (explicitSports && !explicitSports.has(String(event.sport_key))) return false;
       if (!sportMatches(requestedSport, event)) return false;
       const startMs = Date.parse(event.commence_time);
       return Number.isFinite(startMs) && startMs <= now;
     });
 
-    // On the free plan, do not fan out into one /scores request per live sport.
-    // That would consume the monthly quota very quickly. Paid mode keeps the
-    // score enrichment behaviour.
+    // One score request per sport that actually has a candidate event.
+    // This keeps the free plan usable while ensuring we never label a
+    // merely scheduled event as LIVE.
     const scoreMap = new Map<string, any>();
-    if (!freeMode) {
-      const bySport = new Map<string, any[]>();
-      for (const event of liveRaw) {
-        const key = String(event.sport_key || "");
-        if (!bySport.has(key)) bySport.set(key, []);
-        bySport.get(key)!.push(event);
+    const bySport = new Set(candidates.map((e: any) => String(e.sport_key || "")));
+    await Promise.all([...bySport].map(async (sportKey) => {
+      try {
+        const scores = await fetchScores(sportKey);
+        for (const score of scores) {
+          if (!score.completed) scoreMap.set(score.id, score);
+        }
+      } catch (error: any) {
+        console.warn("Provider live score request unavailable", sportKey, error?.message);
       }
-      await Promise.all(
-        [...bySport.keys()].map(async (sportKey) => {
-          try {
-            const scores = await fetchScores(sportKey);
-            for (const score of scores) scoreMap.set(score.id, score);
-          } catch (error: any) {
-            console.warn("Provider score enrichment unavailable", sportKey, error?.message);
-          }
-        })
-      );
-    }
+    }));
 
-    const results = liveRaw.map((event: any) => {
-      const item = normalizeProviderEvent(event, scoreMap.get(event.id));
-      return { ...item, status: "live" };
-    });
+    const results = candidates
+      .filter((event: any) => scoreMap.has(event.id))
+      .map((event: any) => normalizeProviderEvent(event, scoreMap.get(event.id)))
+      .filter((event: any) => event.status === "live");
 
-    results.sort(
-      (a, b) =>
-        new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime()
+    results.sort((a, b) =>
+      new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime()
     );
     return results;
   }
@@ -200,7 +190,7 @@ async function providerEvents(requestedSport: string | null, status: string | nu
       for (const raw of odds) {
         const start = new Date(raw.commence_time).getTime();
         const item = normalizeProviderEvent(raw, scoreMap.get(raw.id));
-        if (status === "scheduled" && item.status !== "scheduled") continue;
+        if (status === "scheduled" && (item.status !== "scheduled" || start <= Date.now())) continue;
         if (status === "finished" && item.status !== "finished") continue;
 
         const fromMs = parseDate(from);
@@ -260,6 +250,7 @@ export async function GET(req: NextRequest) {
       });
     } catch (error: any) {
       console.warn("Provider feed unavailable", error?.message);
+      return NextResponse.json({ok:false,error:"The live sports provider is unavailable. No local/demo events are being substituted.",source:"provider"}, {status:502});
     }
   }
 
