@@ -122,22 +122,62 @@ async function providerEvents(requestedSport: string | null, status: string | nu
 
   for (const sport of selected) {
     try {
-      const odds = await fetchOdds(sport.key);
-      let scores: any[] = [];
       if (status === "live") {
+        // Use the provider's scores feed to discover live fixtures first.
+        // Odds are optional for discovery; the event page can load detailed
+        // markets separately. This prevents live games disappearing when the
+        // odds endpoint temporarily has no market for them.
+        let scores: any[] = [];
         try {
           scores = await fetchScores(sport.key);
-        } catch {
-          scores = [];
+        } catch (error: any) {
+          console.warn("Provider live scores unavailable", sport.key, error?.message);
         }
+
+        const liveScores = scores.filter((s: any) =>
+          !s.completed &&
+          s.commence_time &&
+          new Date(s.commence_time).getTime() <= Date.now()
+        );
+        if (!liveScores.length) continue;
+
+        let odds: any[] = [];
+        try {
+          odds = await fetchOdds(sport.key);
+        } catch (error: any) {
+          console.warn("Provider live odds unavailable", sport.key, error?.message);
+        }
+        const oddsMap = new Map(odds.map((o: any) => [o.id, o]));
+
+        for (const score of liveScores) {
+          const raw = oddsMap.get(score.id) || {
+            id: score.id,
+            sport_key: score.sport_key || sport.key,
+            sport_title: sport.title,
+            commence_time: score.commence_time,
+            home_team: score.home_team,
+            away_team: score.away_team,
+            bookmakers: [],
+          };
+          const item = normalizeProviderEvent(raw, score);
+          results.push(item);
+        }
+        continue;
       }
-      const scoreMap = new Map(scores.map((s: any) => [s.id, s]));
+
+      const odds = await fetchOdds(sport.key);
+      const scoreMap = new Map<string, any>();
+      let scores: any[] = [];
+      try {
+        scores = await fetchScores(sport.key);
+      } catch {
+        scores = [];
+      }
+      for (const score of scores) scoreMap.set(score.id, score);
 
       for (const raw of odds) {
         const start = new Date(raw.commence_time).getTime();
-        const liveScore = scoreMap.get(raw.id);
-        const item = normalizeProviderEvent(raw, liveScore);
-        if (status === "live" && (!liveScore || item.status !== "live")) continue;
+        const item = normalizeProviderEvent(raw, scoreMap.get(raw.id));
         if (status === "scheduled" && item.status !== "scheduled") continue;
         if (status === "finished" && item.status !== "finished") continue;
 
