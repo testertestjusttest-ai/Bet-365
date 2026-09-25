@@ -19,3 +19,4 @@ profiles, wallets, events, markets, selections, bets, bet_selections.
 
 ## Deployment
 - Build fixes are committed on main; Vercel should deploy the latest main commit automatically.
+- Deployment source of truth: the current main branch.
