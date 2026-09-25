@@ -158,3 +158,29 @@ body{background:#101010}
 .casino-provider-card>div:nth-child(2){min-width:0;display:grid;gap:4px;flex:1}.casino-provider-card b{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.casino-provider-card small{font-size:10px;color:#82928b}.casino-provider-card>svg{color:#aebbb6;flex:0 0 auto}
 .casino-provider-note{margin:18px 0 4px;padding:12px;border-top:1px solid #252c29;color:#71817b;font-size:11px;line-height:1.5}
 @media(max-width:420px){.casino-provider-grid{gap:8px}.casino-provider-card{min-height:70px;padding:9px;gap:8px}.casino-provider-mark{width:31px;height:31px;flex-basis:31px;font-size:15px}.casino-provider-card b{font-size:11px}.casino-provider-card small{font-size:9px}.casino-provider-card>svg{width:16px}}
+
+/* Casino provider directory + professional account centre */
+.casino-filter-row{display:flex;gap:8px;overflow:auto;padding:0 0 14px}
+.casino-filter-row a{display:flex;align-items:center;gap:6px;padding:8px 12px;border:1px solid #303936;border-radius:999px;color:#aebbb6;text-decoration:none;font-size:12px;font-weight:800;background:#121816}
+.casino-filter-row a.active{background:#d8f600;color:#07100d;border-color:#d8f600}
+.casino-provider-mark{position:relative;overflow:hidden;font-size:11px;letter-spacing:-.4px}
+.casino-provider-mark span{position:relative;z-index:2}
+.casino-provider-mark:after{content:"";position:absolute;width:18px;height:18px;right:-4px;top:-4px;border-radius:50%;background:#d8f60022}
+.provider-mark-1{background:linear-gradient(145deg,#28253c,#111316)}.provider-mark-2{background:linear-gradient(145deg,#3a2921,#111316)}
+.provider-mark-3{background:linear-gradient(145deg,#213a35,#111316)}.provider-mark-4{background:linear-gradient(145deg,#29263d,#111316)}
+.provider-mark-5{background:linear-gradient(145deg,#3b2e22,#111316)}.provider-mark-6{background:linear-gradient(145deg,#24363f,#111316)}
+.provider-mark-7{background:linear-gradient(145deg,#38263b,#111316)}
+.account-page{min-height:100vh;background:#070b09}
+.account-wrap{width:min(100%,980px);margin:0 auto;padding:28px 16px 100px}
+.account-hero{display:flex;align-items:center;gap:15px;padding:20px;border:1px solid #263b30;border-radius:16px;background:linear-gradient(135deg,#102219,#0c1310)}
+.account-avatar{width:58px;height:58px;display:grid;place-items:center;border-radius:50%;background:#172c21;color:#d8f600;border:1px solid #385342}
+.account-hero h1{margin:2px 0 4px;font-size:30px}.account-hero p{margin:0;color:#8fa098;font-size:13px;max-width:60vw;overflow:hidden;text-overflow:ellipsis}
+.account-logout{margin-left:auto;display:flex;align-items:center;gap:7px;background:transparent;border:1px solid #3a4d43;color:#c6d1cc;border-radius:9px;padding:10px 12px;font-weight:800}
+.account-balance-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}
+.account-balance-grid a{position:relative;display:grid;gap:5px;padding:18px;background:#101813;border:1px solid #263b30;border-radius:14px;color:#f2f7f4;text-decoration:none}
+.account-balance-grid span{font-size:11px;color:#87978f;text-transform:uppercase;font-weight:800}.account-balance-grid b{font-size:16px}.account-balance-grid small{color:#91a199}.account-balance-grid svg{position:absolute;right:16px;top:50%;transform:translateY(-50%);color:#d8f600}
+.account-section-title{margin:30px 0 12px}.account-section-title h2{margin:4px 0;font-size:22px}
+.account-menu{display:grid;border:1px solid #263b30;border-radius:14px;overflow:hidden;background:#0e1511}
+.account-menu-row{display:flex;align-items:center;gap:12px;padding:15px;text-decoration:none;color:#f2f7f4;border-bottom:1px solid #202c26}.account-menu-row:last-child{border-bottom:0}.account-menu-row>span:nth-child(2){display:grid;gap:4px;flex:1}.account-menu-row small{color:#84948c;font-size:12px}.account-menu-row>svg{color:#71817a}.account-menu-icon{width:36px;height:36px;display:grid;place-items:center;border-radius:9px;background:#15231c;color:#d8f600}
+.account-panels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}.account-panels article{padding:16px;background:#0e1511;border:1px solid #263b30;border-radius:13px}.account-panels h3{margin:0 0 7px;font-size:15px}.account-panels p{margin:0;color:#87978f;font-size:12px;line-height:1.5}.account-panels article>b{display:block;margin-top:5px;font-size:13px}.account-status{display:inline-block;margin-top:7px;padding:5px 8px;border-radius:999px;background:#282615;color:#d7cf87;font-size:10px}
+@media(max-width:600px){.account-wrap{padding:18px 12px 100px}.account-hero{padding:15px}.account-avatar{width:48px;height:48px}.account-hero h1{font-size:25px}.account-logout{padding:8px}.account-balance-grid,.account-panels{grid-template-columns:1fr}.account-menu-row{padding:13px}.account-menu-icon{width:34px;height:34px}}
