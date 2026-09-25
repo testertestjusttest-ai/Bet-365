@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "../../lib/supabase-browser";
 
-type DemoBet = {
+type DemoBet = {id?: string; betType?: string; selections?: Array<{event?: string; label?: string; odd?: number|string}>; stake?: number; potentialReturn?: number; createdAt?: string;
   status?: string;
   date?: string;
   event?: string;
@@ -64,13 +64,15 @@ export default function Bets() {
           items.map((item, index) => (
             <div className="match-card" key={index}>
               <div className="match-meta">
-                <span>{item.status || "Open"}</span>
-                <span>{item.date || ""}</span>
+                <span>{item.status === "demo_accepted" ? "Demo accepted" : (item.status || "Open")}</span>
+                <span>{item.createdAt ? new Date(item.createdAt).toLocaleString() : (item.date || "")}</span>
               </div>
               <div className="teams">
-                <b>{item.event || "Event"}</b>
-                <b>{item.odd ?? "—"}</b>
+                <b>{item.betType === "multiple" ? "Multiple bet" : "Single bet"}</b>
+                <b>{Number(item.stake || 0).toFixed(2)}</b>
               </div>
+              {(item.selections || []).map((s, i) => <div className="match-meta" key={i}><span>{s.event || "Event"} · {s.label || "Selection"}</span><strong>{Number(s.odd || 0).toFixed(2)}</strong></div>)}
+              <div className="market-row"><span>Potential return</span><strong>{Number(item.potentialReturn || 0).toFixed(2)}</strong></div>
             </div>
           ))
         )}
