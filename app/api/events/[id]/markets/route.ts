@@ -4,6 +4,7 @@ import {fetchEventMarkets,fetchEventOdds,mapMarketName} from "../../../../../lib
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
 async function loadProviderEvent(id:string){
+ const {id}=await params;
  const url=process.env.NEXT_PUBLIC_SUPABASE_URL,key=process.env.SUPABASE_SERVICE_ROLE_KEY;
  if(!url||!key) throw new Error("Server sports feed is not configured.");
  const db=createClient(url,key,{auth:{autoRefreshToken:false,persistSession:false}});
@@ -12,11 +13,11 @@ async function loadProviderEvent(id:string){
  return {db,event};
 }
 
-export async function GET(req:NextRequest,{params}:{params:{id:string}}){
+export async function GET(req:NextRequest,{params}:{params:Promise<{id:string}>}){
  const url=process.env.NEXT_PUBLIC_SUPABASE_URL,key=process.env.SUPABASE_SERVICE_ROLE_KEY;
  if(!url||!key) return NextResponse.json({ok:false,error:"Server sports feed is not configured."},{status:503});
  const db=createClient(url,key,{auth:{autoRefreshToken:false,persistSession:false}});
- const {data:event,error}=await db.from("events").select("id,sport,provider,provider_event_id,provider_sport_key").eq("id",Number(params.id)).single();
+ const {data:event,error}=await db.from("events").select("id,sport,provider,provider_event_id,provider_sport_key").eq("id",Number(id)).single();
  if(error||!event) return NextResponse.json({ok:false,error:"Event not found."},{status:404});
  if(event.provider!=="the_odds_api"||!event.provider_event_id||!event.provider_sport_key) return NextResponse.json({ok:true,source:"database",markets:[]});
  try{
@@ -30,9 +31,10 @@ export async function GET(req:NextRequest,{params}:{params:{id:string}}){
   return NextResponse.json({ok:true,source:"provider",availableMarketKeys:keys,markets:(odds.bookmakers?.[0]?.markets||[]).map((m:any)=>({key:m.key,name:mapMarketName(m.key),outcomes:m.outcomes}))});
  }catch(error:any){return NextResponse.json({ok:false,error:error?.message||"Event market lookup failed"},{status:502});}
 }
-export async function POST(req:NextRequest,{params}:{params:{id:string}}){
+export async function POST(req:NextRequest,{params}:{params:Promise<{id:string}>}){
  try{
-  const {db,event}=await loadProviderEvent(params.id);
+  const {id}=await params;
+  const {db,event}=await loadProviderEvent(id);
   if(event.provider!=="the_odds_api"||!event.provider_event_id||!event.provider_sport_key) return NextResponse.json({ok:true,source:"database",synced:0});
   const discovered=await fetchEventMarkets(event.provider_sport_key,event.provider_event_id);
   const bookmaker=process.env.SPORTS_FEED_BOOKMAKER ? discovered.bookmakers.find((b:any)=>b.key===process.env.SPORTS_FEED_BOOKMAKER)||discovered.bookmakers[0] : discovered.bookmakers[0];
