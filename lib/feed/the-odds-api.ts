@@ -65,9 +65,9 @@ export function mapMarketName(key:string){
   return key.replaceAll("_"," ");
 }
 
-export async function fetchEventMarkets(sport:string,eventId:string){
+export async function fetchEventMarkets(sport:string,eventId:string,regionsOverride?:string){
   const c=feedConfig();
-  const q=new URLSearchParams({apiKey:c.apiKey,regions:c.regions,dateFormat:"iso"});
+  const q=new URLSearchParams({apiKey:c.apiKey,regions:regionsOverride||c.regions,dateFormat:"iso"});
   if(c.bookmaker) q.set("bookmakers",c.bookmaker);
   return getJson<{id:string;sport_key:string;bookmakers:Array<{key:string;title:string;markets:Array<{key:string}>}>}>(BASE+"/sports/"+encodeURIComponent(sport)+"/events/"+encodeURIComponent(eventId)+"/markets?"+q.toString());
 }
