@@ -16,10 +16,10 @@ const items=[
 ];
 
 export default function Account(){
- const [email,setEmail]=useState("");
+ const [email,setEmail]=useState(""),[adminRole,setAdminRole]=useState("user");
  const [signingOut,setSigningOut]=useState(false);
  const supabase=createClient();
- useEffect(()=>{supabase.auth.getUser().then(({data})=>setEmail(data.user?.email||""))},[]);
+ useEffect(()=>{supabase.auth.getUser().then(async({data})=>{setEmail(data.user?.email||"");if(data.user){const {data:p}=await supabase.from("profiles").select("admin_role").eq("id",data.user.id).maybeSingle();setAdminRole(p?.admin_role||"user")}})},[]);
  async function logout(){setSigningOut(true);await supabase.auth.signOut();location.href="/";}
  return <main className="app-shell account-page">
   <header className="topbar">
@@ -36,7 +36,7 @@ export default function Account(){
    <section className="account-menu">
     {items.map(({href,icon:Icon,title,sub})=><a className="account-menu-row" href={href} key={title}><span className="account-menu-icon"><Icon size={19}/></span><span><b>{title}</b><small>{sub}</small></span><ChevronRight size={18}/></a>)}
    </section>
-   <section className="account-logout-panel"><button className="account-logout account-logout-bottom" onClick={logout} disabled={signingOut}><LogOut size={17}/>{signingOut?"Signing out…":"Log out"}</button></section>
+   <section className="account-menu" style={{marginTop:14}}>{["support_admin","admin","main_admin"].includes(adminRole)&&<a className="account-menu-row" href="/admin"><span className="account-menu-icon"><ShieldCheck size={19}/></span><span><b>Admin control centre</b><small>Authorized staff operations</small></span><ChevronRight size={18}/></a>}</section><section className="account-logout-panel"><button className="account-logout account-logout-bottom" onClick={logout} disabled={signingOut}><LogOut size={17}/>{signingOut?"Signing out…":"Log out"}</button></section>
   </div>
  </main>;
 }
