@@ -104,6 +104,56 @@ async function providerEvents(requestedSport: string | null, status: string | nu
     .split(",")
     .map((x) => x.trim())
     .filter(Boolean);
+  const explicitSports = configured.length && !configured.includes("auto")
+    ? new Set(configured)
+    : null;
+
+  if (status === "live") {
+    // The Odds API's /odds/upcoming endpoint includes all currently live
+    // events across sports. This is more reliable than relying only on the
+    // scores endpoint, whose coverage is limited to selected sports/leagues.
+    const liveOdds = await fetchOdds("upcoming", "h2h");
+    const now = Date.now();
+
+    const liveRaw = liveOdds.filter((event: any) => {
+      if (explicitSports && !explicitSports.has(String(event.sport_key))) return false;
+      if (!sportMatches(requestedSport, event)) return false;
+      const startMs = Date.parse(event.commence_time);
+      return Number.isFinite(startMs) && startMs <= now;
+    });
+
+    // Scores are optional enrichment. A live event must not disappear merely
+    // because its sport/league is not yet covered by the scores endpoint.
+    const bySport = new Map<string, any[]>();
+    for (const event of liveRaw) {
+      const key = String(event.sport_key || "");
+      if (!bySport.has(key)) bySport.set(key, []);
+      bySport.get(key)!.push(event);
+    }
+
+    const scoreMap = new Map<string, any>();
+    await Promise.all(
+      [...bySport.keys()].map(async (sportKey) => {
+        try {
+          const scores = await fetchScores(sportKey);
+          for (const score of scores) scoreMap.set(score.id, score);
+        } catch (error: any) {
+          console.warn("Provider score enrichment unavailable", sportKey, error?.message);
+        }
+      })
+    );
+
+    const results = liveRaw.map((event: any) => {
+      const item = normalizeProviderEvent(event, scoreMap.get(event.id));
+      return { ...item, status: "live" };
+    });
+
+    results.sort(
+      (a, b) =>
+        new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime()
+    );
+    return results;
+  }
 
   let sportItems: any[];
   if (configured.length && !configured.includes("auto")) {
@@ -115,56 +165,14 @@ async function providerEvents(requestedSport: string | null, status: string | nu
 
   sportItems = sportItems.filter((s) => sportMatches(requestedSport, s));
 
-  // Keep the request bounded so a single page load cannot fan out without limit.
+  // Keep scheduled browsing bounded. The Live branch above uses the provider's
+  // all-sports endpoint so it is not limited to the first 24 active sports.
   const maxSports = Math.min(sportItems.length, 24);
   const selected = sportItems.slice(0, maxSports);
   const results: any[] = [];
 
   for (const sport of selected) {
     try {
-      if (status === "live") {
-        // Use the provider's scores feed to discover live fixtures first.
-        // Odds are optional for discovery; the event page can load detailed
-        // markets separately. This prevents live games disappearing when the
-        // odds endpoint temporarily has no market for them.
-        let scores: any[] = [];
-        try {
-          scores = await fetchScores(sport.key);
-        } catch (error: any) {
-          console.warn("Provider live scores unavailable", sport.key, error?.message);
-        }
-
-        const liveScores = scores.filter((s: any) =>
-          !s.completed &&
-          s.commence_time &&
-          new Date(s.commence_time).getTime() <= Date.now()
-        );
-        if (!liveScores.length) continue;
-
-        let odds: any[] = [];
-        try {
-          odds = await fetchOdds(sport.key);
-        } catch (error: any) {
-          console.warn("Provider live odds unavailable", sport.key, error?.message);
-        }
-        const oddsMap = new Map(odds.map((o: any) => [o.id, o]));
-
-        for (const score of liveScores) {
-          const raw = oddsMap.get(score.id) || {
-            id: score.id,
-            sport_key: score.sport_key || sport.key,
-            sport_title: sport.title,
-            commence_time: score.commence_time,
-            home_team: score.home_team,
-            away_team: score.away_team,
-            bookmakers: [],
-          };
-          const item = normalizeProviderEvent(raw, score);
-          results.push(item);
-        }
-        continue;
-      }
-
       const odds = await fetchOdds(sport.key);
       const scoreMap = new Map<string, any>();
       let scores: any[] = [];
