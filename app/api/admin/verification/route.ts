@@ -2,14 +2,26 @@ import {NextResponse} from "next/server";
 import {createClient as createSupabaseClient} from "@supabase/supabase-js";
 import {createServerClientForAuth} from "../../../../lib/supabase-server";
 
-async function actor(){
+async function actor(req:Request){
+ const bearer=req.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1];
+ if(bearer){
+  const url=process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key=process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if(url&&key){
+   const sb=createSupabaseClient(url,key,{auth:{autoRefreshToken:false,persistSession:false}});
+   const {data:{user}}=await sb.auth.getUser(bearer);
+   if(user){
+    const {data:p}=await sb.from("profiles").select("id,admin_role").eq("id",user.id).maybeSingle();
+    return p;
+   }
+  }
+ }
  const sb=await createServerClientForAuth();
  const {data:{user}}=await sb.auth.getUser();
  if(!user)return null;
  const {data:p}=await sb.from("profiles").select("id,admin_role").eq("id",user.id).maybeSingle();
  return p;
 }
-
 const STAFF_ROLES=["support_admin","admin","main_admin"] as const;
 const VERIFICATION_STATUSES=["pending","under_review","approved","rejected"] as const;
 
@@ -20,9 +32,9 @@ function adminClient(){
  return createSupabaseClient(url,key,{auth:{autoRefreshToken:false,persistSession:false}});
 }
 
-export async function GET(){
+export async function GET(req:Request){
  try{
-  const a=await actor();
+  const a=await actor(req);
   if(!a)return NextResponse.json({error:"Unauthorized"},{status:401});
   if(!STAFF_ROLES.includes(a.admin_role as typeof STAFF_ROLES[number]))return NextResponse.json({error:"Forbidden"},{status:403});
   const sb=adminClient();
@@ -36,7 +48,7 @@ export async function GET(){
 
 export async function PATCH(req:Request){
  try{
-  const a=await actor();
+  const a=await actor(req);
   if(!a)return NextResponse.json({error:"Unauthorized"},{status:401});
   if(!STAFF_ROLES.includes(a.admin_role as typeof STAFF_ROLES[number]))return NextResponse.json({error:"Forbidden"},{status:403});
   const body=await req.json();
