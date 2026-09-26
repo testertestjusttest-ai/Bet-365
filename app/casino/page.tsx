@@ -51,8 +51,8 @@ const providers:Provider[]=[
  {name:"Aristocrat",full:"Aristocrat",type:"Slots • Casino",logo:"https://www.google.com/s2/favicons?domain=aristocrat.com&sz=128"}
 ];
 
-const initials=(name:string)=>name.split(/\\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join("").toUpperCase();
-const providerLabel=(code:string)=>code.replace(/[-_]+/g," ").replace(/\\b\\w/g,c=>c.toUpperCase());
+const initials=(name:string)=>name.split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join("").toUpperCase();
+const providerLabel=(code:string)=>code.replace(/[-_]+/g," ").replace(/\b\w/g,c=>c.toUpperCase());
 
 export default function Casino(){
  const [selected,setSelected]=useState("");
