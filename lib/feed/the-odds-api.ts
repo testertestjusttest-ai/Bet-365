@@ -13,7 +13,7 @@ export function feedConfig(){
   return {
     apiKey,
     sports,
-    regions:freeMode ? "us" : (process.env.SPORTS_FEED_REGION||"eu"),
+    regions:process.env.SPORTS_FEED_REGION || "eu",
     markets:freeMode ? "h2h" : (process.env.SPORTS_FEED_MARKETS||"h2h,spreads,totals"),
     freeMode,
     bookmaker:process.env.SPORTS_FEED_BOOKMAKER||""
