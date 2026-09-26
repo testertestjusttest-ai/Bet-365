@@ -14,11 +14,17 @@ export async function GET(req:NextRequest,{params}:{params:Promise<{sport:string
   const detailRegions=process.env.SPORTS_FEED_DETAIL_REGION||process.env.SPORTS_FEED_REGION||"eu";
   let marketKeys=configured.split(",").map(x=>x.trim()).filter(Boolean);
   if(!marketKeys.length){
-   const available=await fetchEventMarkets(sport,id,detailRegions);
-   const book=available.bookmakers?.[0];
-   const availableKeys=(book?.markets||[]).map((m:any)=>m.key);
-   const preferred=["h2h","spreads","totals","btts","double_chance","draw_no_bet"];
-   marketKeys=[...preferred.filter((key)=>availableKeys.includes(key)),...availableKeys.filter((key)=>!preferred.includes(key))].slice(0,freeMode?3:12);
+   if(freeMode){
+    // Avoid an extra discovery request on the 500-credit tier. The event-odds
+    // endpoint will return only the markets that are actually available.
+    marketKeys=["h2h","spreads","totals"];
+   }else{
+    const available=await fetchEventMarkets(sport,id,detailRegions);
+    const book=available.bookmakers?.[0];
+    const availableKeys=(book?.markets||[]).map((m:any)=>m.key);
+    const preferred=["h2h","spreads","totals","btts","double_chance","draw_no_bet"];
+    marketKeys=[...preferred.filter((key)=>availableKeys.includes(key)),...availableKeys.filter((key)=>!preferred.includes(key))].slice(0,12);
+   }
   }
   if(!marketKeys.length)marketKeys=(process.env.SPORTS_FEED_MARKETS||"h2h,spreads,totals").split(",").map(x=>x.trim()).filter(Boolean).slice(0,freeMode?3:12);
   const event=await fetchEventOdds(sport,id,marketKeys.slice(0,freeMode?3:12).join(","),detailRegions);
