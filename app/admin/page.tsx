@@ -9,14 +9,18 @@ type Verify={id:string;user_id:string;legal_name:string|null;date_of_birth:strin
 export default function AdminPage(){
  const supabase=createClient();
  const [me,setMe]=useState<AdminUser|null>(null),[users,setUsers]=useState<AdminUser[]>([]),[verifications,setVerifications]=useState<Verify[]>([]),[message,setMessage]=useState("Loading…"),[busy,setBusy]=useState(false);
-
+ async function authHeaders(){
+  const {data}=await supabase.auth.getSession();
+  return data.session?.access_token?{Authorization:`Bearer ${data.session.access_token}`}:{};
+ }
  async function load(){
   setMessage("Loading admin data…");
   const {data:{user}}=await supabase.auth.getUser();
   if(!user){location.href="/login?next=/admin";return;}
+  const headers=await authHeaders();
   const [usersRes,verificationRes]=await Promise.all([
-   fetch("/api/admin/users",{cache:"no-store"}),
-   fetch("/api/admin/verification",{cache:"no-store"})
+   fetch("/api/admin/users",{cache:"no-store",headers}),
+   fetch("/api/admin/verification",{cache:"no-store",headers})
   ]);
   const usersJson=await usersRes.json().catch(()=>({}));
   const verificationJson=await verificationRes.json().catch(()=>({}));
@@ -24,30 +28,24 @@ export default function AdminPage(){
   const rows=(usersJson.items||[]) as AdminUser[];
   const current=rows.find(x=>x.id===user.id);
   if(!current||!["support_admin","admin","main_admin"].includes(current.admin_role)){setMessage("Access denied. This area is restricted to authorized staff.");return;}
-  setMe(current);
-  setUsers(rows);
+  setMe(current); setUsers(rows);
   if(verificationRes.ok)setVerifications((verificationJson.items||[]) as Verify[]);
   else setMessage(verificationJson.error||"Verification queue unavailable.");
   if(verificationRes.ok)setMessage("");
  }
  useEffect(()=>{void load()},[]);
-
  async function setRole(id:string,role:string){
   if(me?.admin_role!=="main_admin"){setMessage("Only the main admin can change staff roles.");return;}
   setBusy(true);
-  const r=await fetch("/api/admin/users",{method:"PATCH",headers:{"content-type":"application/json"},body:JSON.stringify({id,admin_role:role})});
-  const j=await r.json().catch(()=>({}));
-  setMessage(r.ok?"Role updated.":j.error||"Role update failed.");
-  await load();
-  setBusy(false);
+  const headers={...(await authHeaders()),"content-type":"application/json"};
+  const r=await fetch("/api/admin/users",{method:"PATCH",headers,body:JSON.stringify({id,admin_role:role})});
+  const j=await r.json().catch(()=>({})); setMessage(r.ok?"Role updated.":j.error||"Role update failed"); await load(); setBusy(false);
  }
  async function setKyc(id:string,status:Verify["status"]){
   setBusy(true);
-  const r=await fetch("/api/admin/verification",{method:"PATCH",headers:{"content-type":"application/json"},body:JSON.stringify({id,status})});
-  const j=await r.json().catch(()=>({}));
-  setMessage(r.ok?"Verification status updated.":j.error||"Verification update failed.");
-  await load();
-  setBusy(false);
+  const headers={...(await authHeaders()),"content-type":"application/json"};
+  const r=await fetch("/api/admin/verification",{method:"PATCH",headers,body:JSON.stringify({id,status})});
+  const j=await r.json().catch(()=>({})); setMessage(r.ok?"Verification status updated.":j.error||"Verification update failed"); await load(); setBusy(false);
  }
  if(!me)return <main className="app-shell"><div className="sports-page"><h1>Admin</h1><div className="loading-card">{message}</div></div></main>;
  return <main className="app-shell admin-page">
