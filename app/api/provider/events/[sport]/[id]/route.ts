@@ -10,15 +10,18 @@ export async function GET(req:NextRequest,{params}:{params:Promise<{sport:string
  try{
   const {sport,id}=await params;
   const configured=process.env.SPORTS_FEED_DETAIL_MARKETS||"";
-  const detailRegions=process.env.SPORTS_FEED_DETAIL_REGION||"us,eu";
+  const freeMode=process.env.SPORTS_FEED_FREE_MODE !== "false";
+  const detailRegions=process.env.SPORTS_FEED_DETAIL_REGION||process.env.SPORTS_FEED_REGION||"eu";
   let marketKeys=configured.split(",").map(x=>x.trim()).filter(Boolean);
   if(!marketKeys.length){
    const available=await fetchEventMarkets(sport,id,detailRegions);
    const book=available.bookmakers?.[0];
-   marketKeys=(book?.markets||[]).map((m:any)=>m.key).slice(0,12);
+   const availableKeys=(book?.markets||[]).map((m:any)=>m.key);
+   const preferred=["h2h","spreads","totals","btts","double_chance","draw_no_bet"];
+   marketKeys=[...preferred.filter((key)=>availableKeys.includes(key)),...availableKeys.filter((key)=>!preferred.includes(key))].slice(0,freeMode?3:12);
   }
-  if(!marketKeys.length)marketKeys=(process.env.SPORTS_FEED_MARKETS||"h2h,spreads,totals").split(",").map(x=>x.trim()).filter(Boolean);
-  const event=await fetchEventOdds(sport,id,marketKeys.join(","),detailRegions);
+  if(!marketKeys.length)marketKeys=(process.env.SPORTS_FEED_MARKETS||"h2h,spreads,totals").split(",").map(x=>x.trim()).filter(Boolean).slice(0,freeMode?3:12);
+  const event=await fetchEventOdds(sport,id,marketKeys.slice(0,freeMode?3:12).join(","),detailRegions);
   const bookmaker=chooseBookmaker(event);
   if(!bookmaker)return NextResponse.json({ok:false,error:"No bookmaker market data available"},{status:404});
 
