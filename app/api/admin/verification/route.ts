@@ -3,24 +3,15 @@ import {createClient as createSupabaseClient} from "@supabase/supabase-js";
 import {createServerClientForAuth} from "../../../../lib/supabase-server";
 
 async function actor(req:Request){
- const bearer=req.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1];
+ const bearer=req.headers.get("authorization")?.match(/^Bearer\\s+(.+)$/i)?.[1];
+ let userId:string|null=null;
  if(bearer){
-  const url=process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key=process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if(url&&key){
-   const sb=createSupabaseClient(url,key,{auth:{autoRefreshToken:false,persistSession:false}});
-   const {data:{user}}=await sb.auth.getUser(bearer);
-   if(user){
-    const {data:p}=await sb.from("profiles").select("id,admin_role").eq("id",user.id).maybeSingle();
-    return p;
-   }
-  }
+  const url=process.env.NEXT_PUBLIC_SUPABASE_URL; const key=process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if(url&&key){const sb=createSupabaseClient(url,key,{auth:{autoRefreshToken:false,persistSession:false}}); const {data:{user}}=await sb.auth.getUser(bearer); userId=user?.id||null;}
  }
- const sb=await createServerClientForAuth();
- const {data:{user}}=await sb.auth.getUser();
- if(!user)return null;
- const {data:p}=await sb.from("profiles").select("id,admin_role").eq("id",user.id).maybeSingle();
- return p;
+ if(!userId){const sb=await createServerClientForAuth(); const {data:{user}}=await sb.auth.getUser(); userId=user?.id||null;}
+ if(!userId)return null;
+ try{const sb=adminClient(); const {data:p}=await sb.from("profiles").select("id,admin_role").eq("id",userId).maybeSingle(); return p;}catch{return null;}
 }
 const STAFF_ROLES=["support_admin","admin","main_admin"] as const;
 const VERIFICATION_STATUSES=["pending","under_review","approved","rejected"] as const;
