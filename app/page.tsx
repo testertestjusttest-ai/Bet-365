@@ -75,7 +75,24 @@ export default function HomePage(){
  const toggleMultiple=(m:Match,o:{label:string;odd:string})=>setMultiple(s=>{const p:BetPick={id:pickKey({eventId:m.id,label:o.label}),eventId:m.id,event:m.home+" vs "+m.away,label:o.label,odd:Number(o.odd),sport:m.sport,mode:"multiple"};return s.some(x=>x.id===p.id)?s.filter(x=>x.id!==p.id):[...s,p].slice(0,12)});
  const pressStart=(m:Match,o:{label:string;odd:string})=>{const key=m.id+"-"+o.label;longPressed.current[key]=false;timers.current[key]=setTimeout(()=>{longPressed.current[key]=true;toggleMultiple(m,o)},520)};
  const pressEnd=(m:Match,o:{label:string;odd:string})=>{const key=m.id+"-"+o.label;clearTimeout(timers.current[key]);if(!longPressed.current[key]){if(slipMode==="multiple")toggleMultiple(m,o);else addSingle(m,o)}};
- const multipleOdds=multiple.reduce((a,x)=>a*Number(x.odd),1); const placeDemoBet=()=>{setPlaceMessage("");if(!userEmail){location.href="/login?next=/";return;}const selections=slipMode==="single"?single:multiple;const stake=slipMode==="single"?Number(singleStakes[selections[0]?.id]||0):Number(multipleStake||0);if(!selections.length){setPlaceMessage("Select at least one outcome first.");return;}if(!Number.isFinite(stake)||stake<=0){setPlaceMessage("Enter your stake amount first.");return;}const combined=slipMode==="single"?Number(selections[0].odd):multipleOdds;recordDemoBet({id:crypto.randomUUID(),betType:slipMode,selections,stake,potentialReturn:Number((stake*combined).toFixed(2)),status:"demo_accepted",createdAt:new Date().toISOString()});setPlaceMessage("Demo bet accepted for testing. No real-money wallet is charged.");};
+ const multipleOdds=multiple.reduce((a,x)=>a*Number(x.odd),1);
+ const placeDemoBet=()=>{
+   setPlaceMessage("");
+   if(!userEmail){location.href="/login?next=/";return;}
+   if(slipMode==="single"){
+     if(!single.length){setPlaceMessage("Select at least one outcome first.");return;}
+     const bets=single.map(p=>({p,stake:Number(singleStakes[p.id]||0)}));
+     if(bets.some(({stake})=>!Number.isFinite(stake)||stake<=0)){setPlaceMessage("Enter a valid stake for every Single bet.");return;}
+     bets.forEach(({p,stake})=>recordDemoBet({id:crypto.randomUUID(),betType:"single",selections:[p],stake,potentialReturn:Number((stake*Number(p.odd)).toFixed(2)),status:"demo_accepted",createdAt:new Date().toISOString()}));
+     setPlaceMessage(`${bets.length} demo Single bet${bets.length===1?"":"s"} accepted for testing. No real-money wallet is charged.`);
+     return;
+   }
+   if(multiple.length<2){setPlaceMessage("Select at least two outcomes for a Multiple.");return;}
+   const stake=Number(multipleStake||0);
+   if(!Number.isFinite(stake)||stake<=0){setPlaceMessage("Enter your Multiple stake amount first.");return;}
+   recordDemoBet({id:crypto.randomUUID(),betType:"multiple",selections:multiple,stake,potentialReturn:Number((stake*multipleOdds).toFixed(2)),status:"demo_accepted",createdAt:new Date().toISOString()});
+   setPlaceMessage("Demo Multiple bet accepted for testing. No real-money wallet is charged.");
+ };
 
  return <main className="app-shell">
   <header className="topbar">
